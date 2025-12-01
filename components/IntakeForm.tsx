@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 const intakeFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -103,76 +104,152 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
                          classificationSummary?.urgency === 'medium' ? '12' : '24'
     
     return (
-      <div className="rounded-lg border bg-card p-8 text-center">
-        <h3 className="text-xl font-semibold mb-2">Thank You!</h3>
-        <p className="text-muted-foreground mb-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center py-12"
+      >
+        <motion.h3
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-3xl font-bold text-navy mb-4"
+        >
+          Thank You!
+        </motion.h3>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-muted-foreground mb-6 text-lg"
+        >
           We've received your inquiry and will contact you soon.
-        </p>
+        </motion.p>
         {classificationSummary && (
-          <div className="mt-4 p-4 bg-muted/50 rounded-lg text-left">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="mt-6 p-6 bg-gray-50 rounded-lg text-left max-w-md mx-auto border border-gray-200/50"
+          >
+            <p className="text-sm text-muted-foreground mb-2">
+              <strong className="text-navy">Category:</strong> {classificationSummary.probableService}
+            </p>
             <p className="text-sm text-muted-foreground">
-              <strong>Category:</strong> {classificationSummary.probableService}
+              Expect a response within <strong className="text-navy">{urgencyHours} hours</strong>.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Expect a response within {urgencyHours} hours.
-            </p>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     )
   }
 
+  const nameValue = watch("name")
+  const emailValue = watch("email")
+  const phoneValue = watch("phone")
+  const messageValue = watch("message")
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="name">
-          Name <span className="text-destructive">*</span>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      {/* Name Field - Effica Style */}
+      <div className="space-y-3">
+        <Label htmlFor="name" className="text-sm font-medium text-navy uppercase tracking-wide">
+          My name is
         </Label>
-        <Input
-          id="name"
-          {...register("name")}
-          placeholder="John Doe"
-          aria-invalid={errors.name ? "true" : "false"}
-        />
+        <div className="relative">
+          <Input
+            id="name"
+            {...register("name")}
+            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            placeholder={nameValue ? "" : "Your name"}
+            aria-invalid={errors.name ? "true" : "false"}
+          />
+          <AnimatePresence>
+            {nameValue && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+              >
+                {nameValue}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {errors.name && (
           <p className="text-sm text-destructive">{errors.name.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">
-          Email
+      {/* Email Field - Effica Style */}
+      <div className="space-y-3">
+        <Label htmlFor="email" className="text-sm font-medium text-navy uppercase tracking-wide">
+          Contact me at
         </Label>
-        <Input
-          id="email"
-          type="email"
-          {...register("email")}
-          placeholder="john@example.com"
-          aria-invalid={errors.email ? "true" : "false"}
-        />
+        <div className="relative">
+          <Input
+            id="email"
+            type="email"
+            {...register("email")}
+            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            placeholder={emailValue ? "" : "taxprep@paynepros.com"}
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          <AnimatePresence>
+            {emailValue && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+              >
+                {emailValue}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {errors.email && (
           <p className="text-sm text-destructive">{errors.email.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="phone">
-          Phone
+      {/* Phone Field - Effica Style */}
+      <div className="space-y-3">
+        <Label htmlFor="phone" className="text-sm font-medium text-navy uppercase tracking-wide">
+          Phone (optional)
         </Label>
-        <Input
-          id="phone"
-          type="tel"
-          {...register("phone")}
-          placeholder="(555) 123-4567"
-          aria-invalid={errors.phone ? "true" : "false"}
-        />
+        <div className="relative">
+          <Input
+            id="phone"
+            type="tel"
+            {...register("phone")}
+            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            placeholder={phoneValue ? "" : "816-805-1433"}
+            aria-invalid={errors.phone ? "true" : "false"}
+          />
+          <AnimatePresence>
+            {phoneValue && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+              >
+                {phoneValue}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {errors.phone && (
           <p className="text-sm text-destructive">{errors.phone.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="preferredContactMethod">
+      {/* Preferred Contact Method */}
+      <div className="space-y-3">
+        <Label htmlFor="preferredContactMethod" className="text-sm font-medium text-navy uppercase tracking-wide">
           Preferred Contact Method <span className="text-destructive">*</span>
         </Label>
         <Select
@@ -181,7 +258,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             setValue("preferredContactMethod", value as "email" | "phone" | "either", { shouldValidate: true })
           }
         >
-          <SelectTrigger id="preferredContactMethod">
+          <SelectTrigger id="preferredContactMethod" className="border-gray-300 bg-transparent text-navy h-12 text-base">
             <SelectValue placeholder="Select a method" />
           </SelectTrigger>
           <SelectContent>
@@ -197,15 +274,16 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="serviceType">
-          What do you need help with? <span className="text-destructive">*</span>
+      {/* Service Type */}
+      <div className="space-y-3">
+        <Label htmlFor="serviceType" className="text-sm font-medium text-navy uppercase tracking-wide">
+          I want to improve: <span className="text-destructive">*</span>
         </Label>
         <Select
           value={serviceType}
           onValueChange={(value) => setValue("serviceType", value, { shouldValidate: true })}
         >
-          <SelectTrigger id="serviceType">
+          <SelectTrigger id="serviceType" className="border-gray-300 bg-transparent text-navy h-12 text-base">
             <SelectValue placeholder="Select a service" />
           </SelectTrigger>
           <SelectContent>
@@ -223,31 +301,64 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="message">
+      {/* Message Field - Effica Style */}
+      <div className="space-y-3">
+        <Label htmlFor="message" className="text-sm font-medium text-navy uppercase tracking-wide">
           Additional Details <span className="text-destructive">*</span>
         </Label>
-        <Textarea
-          id="message"
-          {...register("message")}
-          placeholder="Tell us more about your situation..."
-          rows={4}
-          aria-invalid={errors.message ? "true" : "false"}
-        />
+        <div className="relative">
+          <Textarea
+            id="message"
+            {...register("message")}
+            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold min-h-[120px] text-base resize-none"
+            placeholder={messageValue ? "" : "Describe your tax or bookkeeping needs..."}
+            rows={4}
+            aria-invalid={errors.message ? "true" : "false"}
+          />
+          <AnimatePresence>
+            {messageValue && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+              >
+                {messageValue.substring(0, 50)}{messageValue.length > 50 ? "..." : ""}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {errors.message && (
           <p className="text-sm text-destructive">{errors.message.message}</p>
         )}
       </div>
 
       {submitStatus === "error" && (
-        <p className="text-sm text-destructive">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-sm text-destructive"
+        >
           There was an error submitting your form. Please try again.
-        </p>
+        </motion.p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Submitting..." : "Submit Inquiry"}
-      </Button>
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <Button 
+          type="submit" 
+          className="w-full bg-navy text-offwhite hover:bg-navy-light h-14 text-base font-medium rounded-md transition-colors" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Submitting..." : "Send Request"}
+        </Button>
+      </motion.div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        By submitting, you agree to our Terms and Privacy Policy.
+      </p>
     </form>
   )
 }

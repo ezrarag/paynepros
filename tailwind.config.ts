@@ -10,6 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Effica Design System
+        navy: {
+          DEFAULT: "#0B1120",
+          light: "#1E293B",
+        },
+        gold: {
+          DEFAULT: "#E3B341",
+          light: "#F4C85A",
+          dark: "#C99D2E",
+        },
+        offwhite: {
+          DEFAULT: "#F9FAFB",
+        },
+        // Maintain shadcn compatibility
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -49,10 +63,18 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      spacing: {
+        "section": "8rem", // py-32 equivalent
+      },
+      fontSize: {
+        "hero": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
+        "display": ["2.5rem", { lineHeight: "1.2", letterSpacing: "-0.01em" }],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
 }
 export default config
+
 
 

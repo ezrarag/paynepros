@@ -90,63 +90,63 @@ const services = [
   },
 ]
 
+import { Section } from "@/components/ui/section"
+import { PageTitle, PageDescription } from "@/components/ui/page-title"
+
 export default function ServicesPage() {
   return (
-    <div className="py-16 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">
-            Our Services
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Comprehensive tax and bookkeeping solutions tailored to your needs
-          </p>
-        </div>
-
-        <div className="space-y-12">
-          {services.map((service) => {
-            const Icon = service.icon
-            return (
-              <Card key={service.id} id={service.id} className="scroll-mt-16">
-                <CardHeader>
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <Icon className="h-8 w-8 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-2xl mb-2">
-                        {service.title}
-                      </CardTitle>
-                      <CardDescription className="text-base">
-                        {service.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-                      What's Included:
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                      {service.details.map((detail, index) => (
-                        <li key={index}>{detail}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mt-6">
-                    <Button asChild>
-                      <Link href="/contact">Get Started</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+    <Section>
+      <div className="mb-16">
+        <PageTitle>Our Services</PageTitle>
+        <PageDescription>
+          Comprehensive tax and bookkeeping solutions tailored to your needs
+        </PageDescription>
       </div>
-    </div>
+
+      <div className="space-y-12">
+        {services.map((service) => {
+          const Icon = service.icon
+          return (
+            <Card key={service.id} id={service.id} className="scroll-mt-16 hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="rounded-lg bg-gold/10 p-3">
+                    <Icon className="h-8 w-8 text-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl mb-2 text-navy">
+                      {service.title}
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      {service.description}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+                    What's Included:
+                  </h3>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                    {service.details.map((detail, index) => (
+                      <li key={index}>{detail}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-6">
+                  <Button asChild className="bg-gold text-navy hover:bg-gold-dark">
+                    <Link href="/contact">Get Started</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </Section>
   )
 }
+
 
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { Navigation } from "@/components/Navigation"
+import { LayoutWrapper } from "@/components/LayoutWrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,16 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navigation brand="paynepros" />
-        <main>{children}</main>
-        <footer className="border-t py-8 px-4 mt-16">
-          <div className="mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} Payne Professional Services. All rights reserved.</p>
-          </div>
-        </footer>
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   )
 }
+
 
 

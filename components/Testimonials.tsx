@@ -30,46 +30,47 @@ const testimonials = [
   },
 ]
 
+import { Section } from "@/components/ui/section"
+
 export function Testimonials({ brand }: TestimonialsProps) {
   return (
-    <section className="py-16 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            What Our Clients Say
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Trusted by individuals and families for reliable tax services
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.name}>
-              <CardContent className="pt-6">
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  "{testimonial.content}"
-                </p>
-                <div>
-                  <p className="font-semibold">{testimonial.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {testimonial.role}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+    <Section>
+      <div className="text-left mb-16">
+        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-navy mb-4">
+          What Our Clients Say
+        </h2>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl">
+          Trusted by individuals and families for reliable tax services
+        </p>
       </div>
-    </section>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {testimonials.map((testimonial) => (
+          <Card key={testimonial.name} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className="h-5 w-5 fill-gold text-gold"
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                "{testimonial.content}"
+              </p>
+              <div>
+                <p className="font-semibold text-navy">{testimonial.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {testimonial.role}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </Section>
   )
 }
+
 
 

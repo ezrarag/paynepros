@@ -1,5 +1,9 @@
 import { ProcessSteps } from "@/components/ProcessSteps"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Section } from "@/components/ui/section"
+import { PageTitle, PageDescription } from "@/components/ui/page-title"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { MessageSquare, FileCheck, Send, Headphones } from "lucide-react"
 
 const steps = [
@@ -55,34 +59,30 @@ const steps = [
 
 export default function ProcessPage() {
   return (
-    <div className="py-16 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">
-            Our Process
-          </h1>
-          <p className="text-lg text-muted-foreground">
+    <>
+      <Section>
+        <div className="mb-16">
+          <PageTitle>Our Process</PageTitle>
+          <PageDescription>
             A simple, straightforward approach to getting your taxes done right
-          </p>
+          </PageDescription>
         </div>
 
-        <ProcessSteps brand="paynepros" />
-
-        <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {steps.map((step, index) => {
             const Icon = step.icon
             return (
-              <Card key={index}>
+              <Card key={index} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-2">
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="rounded-lg bg-gold/10 p-3">
+                      <Icon className="h-6 w-6 text-gold" />
                     </div>
-                    <CardTitle className="text-xl">{step.title}</CardTitle>
+                    <CardTitle className="text-xl text-navy">{step.title}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
                     {step.description}
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
@@ -96,36 +96,32 @@ export default function ProcessPage() {
           })}
         </div>
 
-        <div className="mt-16 text-center">
-          <Card className="bg-primary/5 border-primary/20">
+        <div className="mt-16">
+          <Card className="bg-gold/5 border-gold/20 hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>Ready to Get Started?</CardTitle>
+              <CardTitle className="text-navy">Ready to Get Started?</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-6 leading-relaxed">
                 Contact us today to begin the process. We're here to help make
                 tax season stress-free.
               </p>
-              <div className="flex gap-4 justify-center">
-                <a
-                  href="/contact"
-                  className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Contact Us
-                </a>
-                <a
-                  href="/book"
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-6 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-                >
-                  Book a Call
-                </a>
+              <div className="flex flex-wrap gap-4">
+                <Button asChild className="bg-gold text-navy hover:bg-gold-dark">
+                  <Link href="/contact">Contact Us</Link>
+                </Button>
+                <Button asChild variant="outline" className="border-gold text-gold hover:bg-gold hover:text-navy">
+                  <Link href="/book">Book a Call</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-    </div>
+      </Section>
+      <ProcessSteps brand="paynepros" />
+    </>
   )
 }
+
 
 

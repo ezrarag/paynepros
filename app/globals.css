@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 20% 15%;
+    /* Effica Design System Colors - HSL values for Tailwind */
+    --background: 210 20% 98%; /* #F9FAFB */
+    --foreground: 222 47% 8%; /* #0B1120 */
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 15%;
+    --card-foreground: 222 47% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 15%;
-    --primary: 220 40% 25%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 220 30% 45%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 220 10% 90%;
-    --muted-foreground: 220 10% 40%;
-    --accent: 200 60% 50%;
-    --accent-foreground: 220 20% 15%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 10% 85%;
-    --input: 220 10% 85%;
-    --ring: 220 40% 25%;
+    --popover-foreground: 222 47% 8%;
+    --primary: 43 74% 57%; /* #E3B341 */
+    --primary-foreground: 222 47% 8%;
+    --secondary: 215 25% 17%; /* navy-light */
+    --secondary-foreground: 210 20% 98%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 43 74% 57%; /* gold */
+    --accent-foreground: 222 47% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 43 74% 57%;
     --radius: 0.5rem;
   }
 }
@@ -32,8 +33,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-offwhite text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
   }
 }
+
 
 

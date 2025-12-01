@@ -28,34 +28,35 @@ const highlights = [
   },
 ]
 
+import { Section } from "@/components/ui/section"
+
 export function QuickHighlights({ brand }: QuickHighlightsProps) {
   return (
-    <section className="py-12 px-4 bg-muted/30">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {highlights.map((highlight) => {
-            const Icon = highlight.icon
-            return (
-              <div
-                key={highlight.title}
-                className="flex flex-col items-center text-center"
-              >
-                <div className="rounded-full bg-primary/10 p-4 mb-4">
-                  <Icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  {highlight.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {highlight.description}
-                </p>
+    <Section className="py-16">
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        {highlights.map((highlight) => {
+          const Icon = highlight.icon
+          return (
+            <div
+              key={highlight.title}
+              className="flex flex-col items-start text-left"
+            >
+              <div className="rounded-full bg-gold/10 p-4 mb-4">
+                <Icon className="h-8 w-8 text-gold" />
               </div>
-            )
-          })}
-        </div>
+              <h3 className="text-lg font-semibold mb-2 text-navy">
+                {highlight.title}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {highlight.description}
+              </p>
+            </div>
+          )
+        })}
       </div>
-    </section>
+    </Section>
   )
 }
+
 
 

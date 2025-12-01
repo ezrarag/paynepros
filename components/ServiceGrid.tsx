@@ -47,42 +47,43 @@ const services = [
   },
 ]
 
+import { Section } from "@/components/ui/section"
+
 export function ServiceGrid({ brand }: ServiceGridProps) {
   return (
-    <section className="py-16 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Our Services
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Comprehensive tax and bookkeeping solutions tailored to your needs
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => {
-            const Icon = service.icon
-            return (
-              <Card key={service.title} className="flex flex-col">
-                <CardHeader>
-                  <div className="mb-4">
-                    <Icon className="h-10 w-10 text-primary" />
-                  </div>
-                  <CardTitle>{service.title}</CardTitle>
-                  <CardDescription>{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto">
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={service.href}>Learn More</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+    <Section>
+      <div className="text-left mb-16">
+        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-navy mb-4">
+          Our Services
+        </h2>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl">
+          Comprehensive tax and bookkeeping solutions tailored to your needs
+        </p>
       </div>
-    </section>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {services.map((service) => {
+          const Icon = service.icon
+          return (
+            <Card key={service.title} className="flex flex-col hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="mb-4">
+                  <Icon className="h-10 w-10 text-gold" />
+                </div>
+                <CardTitle className="text-navy">{service.title}</CardTitle>
+                <CardDescription className="text-base">{service.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="mt-auto">
+                <Button asChild variant="outline" className="w-full border-gold text-gold hover:bg-gold hover:text-navy">
+                  <Link href={service.href}>Learn More</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </Section>
   )
 }
+
 
 
