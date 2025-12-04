@@ -16,7 +16,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     <>
       <Navigation brand="paynepros" />
       <main>{children}</main>
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-transparent py-6 px-4 sm:px-6 lg:px-8">
+      <footer className="hidden md:flex fixed bottom-0 left-0 right-0 z-40 bg-transparent py-6 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-center gap-8">
             <Link 

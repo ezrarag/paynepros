@@ -148,7 +148,7 @@ export function Navigation({ brand }: NavigationProps) {
           </div>
 
           {/* Right: Text + Avatar + Plus Button */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Text on the left */}
             <div className="hidden lg:block">
               <p className={cn(
@@ -161,10 +161,10 @@ export function Navigation({ brand }: NavigationProps) {
             </div>
 
             {/* Left Circle - Picture (FaceTime call) */}
-            <div className="hidden md:block relative">
+            <div className="relative">
               <a
                 href="facetime://8168051433"
-                className="w-16 h-16 rounded-full border-4 border-offwhite shadow-md overflow-hidden relative block cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 md:border-4 border-offwhite shadow-md overflow-hidden relative block cursor-pointer hover:opacity-90 transition-opacity"
               >
                 <Image
                   src="https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2Fheadshot%20-%20detania%20payne.jpeg?alt=media&token=a537d359-f445-4603-bf84-2615d39eb2f5"
@@ -178,8 +178,8 @@ export function Navigation({ brand }: NavigationProps) {
             {/* Right Circle - Plus Button with Login Dropdown */}
             <Popover open={isLoginOpen} onOpenChange={setIsLoginOpen}>
               <PopoverTrigger asChild>
-                <button className="w-16 h-16 rounded-full bg-navy border-4 border-offwhite shadow-md flex items-center justify-center transition-all hover:bg-navy-light">
-                  <Plus className="w-6 h-6 text-offwhite" />
+                <button className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-navy border-2 md:border-4 border-offwhite shadow-md flex items-center justify-center transition-all hover:bg-navy-light">
+                  <Plus className="w-4 h-4 md:w-6 md:h-6 text-offwhite" />
                 </button>
               </PopoverTrigger>
               <PopoverContent 

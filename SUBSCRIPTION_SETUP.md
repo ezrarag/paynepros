@@ -162,3 +162,5 @@ If you encounter issues:
 3. Verify all environment variables are set
 4. Ensure Firebase Admin is configured (for production)
 
+
+
