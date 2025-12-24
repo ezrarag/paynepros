@@ -80,6 +80,43 @@ Submits a lead/inquiry form. Expects:
 
 Currently logs to console. Integrate with your CRM or database as needed.
 
+## Site Access Protection
+
+The site is password-protected. Visitors must enter a password to access any content.
+
+### Passwords
+
+**Admin Password:** `admin123` (change this in production!)
+
+**Temporary Passwords:** `temp123`, `temp456` (comma-separated list)
+
+### Configuration
+
+Passwords are configured in `lib/passwords.ts` and can be overridden with environment variables:
+
+- `SITE_ADMIN_PASSWORD` - Admin password
+- `SITE_TEMP_PASSWORDS` - Comma-separated temporary passwords (e.g., "temp123,temp456")
+
+### How It Works
+
+1. All visitors are redirected to `/password` page if not authenticated
+2. Users enter a password (admin or temporary)
+3. Upon successful authentication, a cookie is set (valid for 30 days)
+4. Users without access can click a link to redirect to `https://readyaimgo.biz`
+
+### Changing Passwords
+
+To change passwords:
+
+1. **For development:** Edit `lib/passwords.ts` directly
+2. **For production:** Set environment variables:
+   ```bash
+   SITE_ADMIN_PASSWORD=your_admin_password
+   SITE_TEMP_PASSWORDS=temp1,temp2,temp3
+   ```
+
+**IMPORTANT:** Change default passwords before deploying to production!
+
 ## Building for Production
 
 ```bash

@@ -1,31 +1,33 @@
-// TEMPORARILY DISABLED - Allowing access to admin without auth for development
-// import { auth } from "./auth"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { PASSWORD_COOKIE_NAME } from "@/lib/passwords"
 
-export default function middleware(req: any) {
-  // Temporarily allow all requests through
+export default function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  
+  // Allow access to password page and API routes
+  if (
+    pathname === "/password" ||
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon")
+  ) {
+    return NextResponse.next()
+  }
+
+  // Check for password authentication cookie
+  const passwordCookie = req.cookies.get(PASSWORD_COOKIE_NAME)
+  const isAuthenticated = passwordCookie && passwordCookie.value === "authenticated"
+
+  // If not authenticated, redirect to password page
+  if (!isAuthenticated) {
+    const redirectUrl = new URL("/password", req.url)
+    redirectUrl.searchParams.set("redirect", pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+
   return NextResponse.next()
 }
-
-// Original middleware code (commented out for now):
-// export default auth((req) => {
-//   const { pathname } = req.nextUrl
-//   const isLoggedIn = !!req.auth
-//
-//   // Protect admin routes
-//   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-//     if (!isLoggedIn) {
-//       return NextResponse.redirect(new URL("/admin/login", req.url))
-//     }
-//   }
-//
-//   // Redirect logged-in users away from login page
-//   if (pathname === "/admin/login" && isLoggedIn) {
-//     return NextResponse.redirect(new URL("/admin", req.url))
-//   }
-//
-//   return NextResponse.next()
-// })
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
