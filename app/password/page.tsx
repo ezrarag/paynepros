@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export default function PasswordPage() {
+function PasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
@@ -114,6 +114,25 @@ export default function PasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy via-navy-dark to-navy-light px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-offwhite rounded-lg shadow-xl p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold text-navy">Site Access</h1>
+              <p className="text-sm text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <PasswordForm />
+    </Suspense>
   )
 }
 
