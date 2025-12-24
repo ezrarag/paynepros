@@ -7,8 +7,10 @@ import Link from "next/link"
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isAdminRoute = pathname?.startsWith("/admin") ?? false
+  const isPasswordPage = pathname === "/password"
 
-  if (isAdminRoute) {
+  // Don't show header/footer for admin routes or password page
+  if (isAdminRoute || isPasswordPage) {
     return <>{children}</>
   }
 
