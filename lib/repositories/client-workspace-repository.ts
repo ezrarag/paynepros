@@ -1,0 +1,173 @@
+import "server-only"
+import { adminDb, Timestamp } from "@/lib/firebase/admin"
+import { ClientWorkspace, TimelineEvent } from "@/lib/types/client-workspace"
+
+const WORKSPACES_COLLECTION = "clientWorkspaces"
+const TIMELINE_COLLECTION = "timeline"
+
+const toIsoString = (value?: FirebaseFirestore.Timestamp | Date | null) => {
+  if (!value) {
+    return new Date().toISOString()
+  }
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+  return value.toDate().toISOString()
+}
+
+const mockWorkspaces: ClientWorkspace[] = [
+  {
+    id: "workspace-001",
+    displayName: "Alicia Jenkins",
+    status: "active",
+    primaryContact: {
+      name: "Alicia Jenkins",
+      email: "alicia@example.com",
+      phone: "(555) 201-4432",
+    },
+    taxYears: [2023, 2024],
+    tags: ["tax", "bookkeeping"],
+    lastActivityAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "workspace-002",
+    displayName: "Legacy Auto Group",
+    status: "active",
+    primaryContact: {
+      name: "Marcus Wells",
+      email: "marcus@legacyauto.com",
+      phone: "(555) 221-9031",
+    },
+    taxYears: [2024],
+    tags: ["business", "payroll"],
+    lastActivityAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+]
+
+const mockTimeline: TimelineEvent[] = [
+  {
+    id: "timeline-1",
+    clientWorkspaceId: "workspace-001",
+    type: "intake",
+    title: "Intake submitted",
+    description: "Client completed the 2024 intake form.",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "timeline-2",
+    clientWorkspaceId: "workspace-001",
+    type: "document",
+    title: "W-2 uploaded",
+    description: "Employer W-2 added to workspace.",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "timeline-3",
+    clientWorkspaceId: "workspace-001",
+    type: "task",
+    title: "Missing 1099",
+    description: "Auto-generated task to request 1099 forms.",
+    createdAt: new Date().toISOString(),
+  },
+]
+
+export class ClientWorkspaceRepository {
+  async findAll(limitCount: number = 25): Promise<ClientWorkspace[]> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Returning mock workspaces.")
+      return mockWorkspaces.slice(0, limitCount)
+    }
+    const snapshot = await adminDb
+      .collection(WORKSPACES_COLLECTION)
+      .orderBy("updatedAt", "desc")
+      .limit(limitCount)
+      .get()
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data()
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: toIsoString(data?.createdAt),
+        updatedAt: toIsoString(data?.updatedAt),
+        lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+      } as ClientWorkspace
+    })
+  }
+
+  async findById(workspaceId: string): Promise<ClientWorkspace | null> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Returning mock workspace.")
+      return mockWorkspaces.find((workspace) => workspace.id === workspaceId) ?? null
+    }
+    const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
+    const snapshot = await docRef.get()
+    if (!snapshot.exists) {
+      return null
+    }
+    const data = snapshot.data()
+    return {
+      ...data,
+      id: snapshot.id,
+      createdAt: toIsoString(data?.createdAt),
+      updatedAt: toIsoString(data?.updatedAt),
+      lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+    } as ClientWorkspace
+  }
+
+  async create(
+    workspace: Omit<ClientWorkspace, "id" | "createdAt" | "updatedAt">
+  ): Promise<ClientWorkspace> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Returning mock workspace.")
+      const now = new Date().toISOString()
+      return {
+        ...workspace,
+        id: "mock-workspace-id",
+        createdAt: now,
+        updatedAt: now,
+      }
+    }
+    const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc()
+    const now = Timestamp.now()
+    await docRef.set({
+      ...workspace,
+      createdAt: now,
+      updatedAt: now,
+    })
+    return {
+      ...workspace,
+      id: docRef.id,
+      createdAt: now.toDate().toISOString(),
+      updatedAt: now.toDate().toISOString(),
+    }
+  }
+
+  async getTimeline(workspaceId: string, limitCount: number = 50): Promise<TimelineEvent[]> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Returning mock timeline.")
+      return mockTimeline.filter((event) => event.clientWorkspaceId === workspaceId).slice(0, limitCount)
+    }
+    const snapshot = await adminDb
+      .collection(WORKSPACES_COLLECTION)
+      .doc(workspaceId)
+      .collection(TIMELINE_COLLECTION)
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .get()
+    return snapshot.docs.map((doc) => {
+      const data = doc.data()
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: toIsoString(data?.createdAt),
+      } as TimelineEvent
+    })
+  }
+}
+
+export const clientWorkspaceRepository = new ClientWorkspaceRepository()

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
+  Users,
   MessageSquare,
   Wallet,
   BookOpen,
@@ -16,6 +17,7 @@ import {
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/clients", label: "Clients", icon: Users },
   { href: "/admin/messaging", label: "Messaging", icon: MessageSquare },
   { href: "/admin/wallet", label: "Wallet", icon: Wallet },
   { href: "/admin/bookkeeping", label: "Bookkeeping", icon: BookOpen },
