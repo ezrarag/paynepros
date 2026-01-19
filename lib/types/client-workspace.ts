@@ -1,9 +1,26 @@
 export type IntakeChannel = "sms" | "email" | "whatsapp"
 export type IntakeStepId = "contact" | "tax_year" | "income" | "expenses" | "consent"
 export type DocumentCategory = "income" | "expenses" | "mileage" | "banking" | "other"
-export type TimelineEventType = "message" | "document" | "payment" | "task" | "intake"
+export type TimelineEventType =
+  | "message"
+  | "document"
+  | "payment"
+  | "task"
+  | "intake"
+  | "profile_updated"
+  | "tax_return"
 export type TaskStatus = "pending" | "in_review" | "completed"
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "refunded"
+export type TaxReturnChecklistStatus = "not_started" | "in_progress" | "complete"
+
+export interface TaxReturnChecklist {
+  documentsComplete: TaxReturnChecklistStatus
+  incomeReviewed: TaxReturnChecklistStatus
+  expensesCategorized: TaxReturnChecklistStatus
+  readyForTaxHawk: TaxReturnChecklistStatus
+  filed: TaxReturnChecklistStatus
+  accepted: TaxReturnChecklistStatus
+}
 
 export interface ClientWorkspace {
   id: string
@@ -16,6 +33,7 @@ export interface ClientWorkspace {
   }
   taxYears: number[]
   tags: string[]
+  taxReturnChecklist?: TaxReturnChecklist
   lastActivityAt?: string
   createdAt: string
   updatedAt: string

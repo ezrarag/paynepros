@@ -1,11 +1,16 @@
 // TEMPORARILY DISABLED AUTH CHECK
 // import { auth } from "@/auth"
-import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MessageSquare, Inbox, FileText } from "lucide-react"
+import { Inbox, FileText } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
-export default async function MessagingPage() {
+export default async function MessagingPage({
+  searchParams,
+}: {
+  searchParams?: { clientId?: string }
+}) {
   // TEMPORARILY DISABLED - Allow access without auth
   // const session = await auth()
   // if (!session?.user?.id) {
@@ -13,16 +18,33 @@ export default async function MessagingPage() {
   // }
 
   // Dynamic import to prevent webpack from bundling Firebase Admin
-  const { leadRepository } = await import("@/lib/repositories/lead-repository")
-  const leads = await leadRepository.findByBusiness("paynepros")
+  const { workspaceMessageRepository } = await import(
+    "@/lib/repositories/workspace-message-repository"
+  )
+  const clientId = searchParams?.clientId
+  const messages = clientId
+    ? await workspaceMessageRepository.findByClientId(clientId)
+    : await workspaceMessageRepository.findAll()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Messaging</h1>
-        <p className="text-muted-foreground mt-2">
-          Unified inbox and Pulse summaries
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Messaging</h1>
+          <p className="text-muted-foreground mt-2">
+            Unified inbox and Pulse summaries
+          </p>
+          {clientId && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Filtered by client workspace: {clientId}
+            </p>
+          )}
+        </div>
+        {clientId && (
+          <Button asChild variant="outline">
+            <Link href="/admin/messaging">Clear filter</Link>
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="inbox" className="space-y-4">
@@ -47,35 +69,35 @@ export default async function MessagingPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {leads.map((lead) => (
+                {messages.map((message) => (
                   <div
-                    key={lead.id}
+                    key={message.id}
                     className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer"
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium">{lead.name}</p>
+                        <p className="font-medium">{message.from || "Client message"}</p>
+                        {message.subject && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {message.subject}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground mt-1">
-                          {lead.message}
+                          {message.body}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                            {lead.source}
+                            {message.source}
                           </span>
-                          {lead.serviceInterest && (
-                            <span className="text-xs px-2 py-1 bg-muted rounded">
-                              {lead.serviceInterest}
-                            </span>
-                          )}
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(lead.createdAt).toLocaleDateString()}
+                        {new Date(message.receivedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                 ))}
-                {leads.length === 0 && (
+                {messages.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-8">
                     No messages yet
                   </p>

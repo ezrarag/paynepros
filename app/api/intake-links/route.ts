@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomBytes, createHash } from "crypto"
+import { createHash } from "crypto"
 import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { IntakeChannel } from "@/lib/types/client-workspace"
+import { createIntakeLinkToken } from "@/lib/intake/link-token"
 
-const DEFAULT_EXPIRY_HOURS = 72
+const DEFAULT_EXPIRY_HOURS = 24 * 7
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,9 +20,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "clientWorkspaceId is required" }, { status: 400 })
     }
 
-    const token = randomBytes(32).toString("hex")
-    const tokenHash = createHash("sha256").update(token).digest("hex")
     const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000).toISOString()
+    const token = createIntakeLinkToken({ workspaceId: clientWorkspaceId, expiresAt })
+    const tokenHash = createHash("sha256").update(token).digest("hex")
 
     const intakeLink = await intakeLinkRepository.create({
       clientWorkspaceId,

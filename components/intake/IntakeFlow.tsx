@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { intakeSteps, IntakeStepField } from "@/lib/intake/steps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,37 +16,19 @@ import {
 
 interface IntakeFlowProps {
   token: string
+  workspaceId: string
 }
 
 type IntakeFormState = Record<string, any>
 
-export function IntakeFlow({ token }: IntakeFlowProps) {
+export function IntakeFlow({ token, workspaceId }: IntakeFlowProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [formState, setFormState] = useState<IntakeFormState>({})
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
   const currentStep = intakeSteps[stepIndex]
   const isLastStep = stepIndex === intakeSteps.length - 1
-
-  useEffect(() => {
-    const validateLink = async () => {
-      try {
-        const response = await fetch(`/api/intake-links/${token}`)
-        if (!response.ok) {
-          const data = await response.json()
-          setError(data?.error || "This intake link is no longer active.")
-          return
-        }
-      } catch (err) {
-        setError("Unable to load intake form. Please try again.")
-      } finally {
-        setLoading(false)
-      }
-    }
-    validateLink()
-  }, [token])
 
   const handleInputChange = (fieldId: string, value: any) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }))
@@ -66,7 +48,7 @@ export function IntakeFlow({ token }: IntakeFlowProps) {
       const response = await fetch(`/api/intake-links/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responses: formState }),
+        body: JSON.stringify({ responses: formState, clientWorkspaceId: workspaceId }),
       })
       if (!response.ok) {
         const data = await response.json()
@@ -83,16 +65,6 @@ export function IntakeFlow({ token }: IntakeFlowProps) {
     () => `Step ${stepIndex + 1} of ${intakeSteps.length}`,
     [stepIndex]
   )
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          Loading intake form...
-        </CardContent>
-      </Card>
-    )
-  }
 
   if (error) {
     return (
