@@ -10,7 +10,7 @@ export default function Home() {
   // const brand = "paynepros" as const
 
   return (
-    <div className="relative">
+    <div className="relative h-screen overflow-hidden">
       {/* Hero Section with full-width background */}
       <HeroSection />
       

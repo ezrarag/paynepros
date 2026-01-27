@@ -1,8 +1,9 @@
 "use client"
 
 import { signOut } from "next-auth/react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LogOut, User } from "lucide-react"
+import { LogOut, User, HelpCircle } from "lucide-react"
 
 interface AdminHeaderProps {
   user: {
@@ -19,6 +20,13 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         <h1 className="text-xl font-bold">PaynePros Admin</h1>
       </div>
       <div className="flex items-center gap-4">
+        <Link
+          href="/admin/security"
+          className="p-2 rounded-md hover:bg-muted transition-colors"
+          title="Security Center"
+        >
+          <HelpCircle className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+        </Link>
         <div className="flex items-center gap-2 text-sm">
           {user.image && (
             <img

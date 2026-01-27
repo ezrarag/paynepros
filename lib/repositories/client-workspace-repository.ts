@@ -98,22 +98,27 @@ export class ClientWorkspaceRepository {
       console.warn("Firebase Admin not initialized. Returning mock workspaces.")
       return mockWorkspaces.slice(0, limitCount)
     }
-    const snapshot = await adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .orderBy("updatedAt", "desc")
-      .limit(limitCount)
-      .get()
+    try {
+      const snapshot = await adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .orderBy("updatedAt", "desc")
+        .limit(limitCount)
+        .get()
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data()
-      return {
-        ...data,
-        id: doc.id,
-        createdAt: toIsoString(data?.createdAt),
-        updatedAt: toIsoString(data?.updatedAt),
-        lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
-      } as ClientWorkspace
-    })
+      return snapshot.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: toIsoString(data?.createdAt),
+          updatedAt: toIsoString(data?.updatedAt),
+          lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+        } as ClientWorkspace
+      })
+    } catch (error) {
+      console.error("Failed to fetch workspaces:", error)
+      throw new Error("Failed to fetch client workspaces")
+    }
   }
 
   async findById(workspaceId: string): Promise<ClientWorkspace | null> {
@@ -121,19 +126,24 @@ export class ClientWorkspaceRepository {
       console.warn("Firebase Admin not initialized. Returning mock workspace.")
       return mockWorkspaces.find((workspace) => workspace.id === workspaceId) ?? null
     }
-    const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
-    const snapshot = await docRef.get()
-    if (!snapshot.exists) {
-      return null
+    try {
+      const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
+      const snapshot = await docRef.get()
+      if (!snapshot.exists) {
+        return null
+      }
+      const data = snapshot.data()
+      return {
+        ...data,
+        id: snapshot.id,
+        createdAt: toIsoString(data?.createdAt),
+        updatedAt: toIsoString(data?.updatedAt),
+        lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+      } as ClientWorkspace
+    } catch (error) {
+      console.error("Failed to fetch workspace:", error)
+      throw new Error("Failed to fetch client workspace")
     }
-    const data = snapshot.data()
-    return {
-      ...data,
-      id: snapshot.id,
-      createdAt: toIsoString(data?.createdAt),
-      updatedAt: toIsoString(data?.updatedAt),
-      lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
-    } as ClientWorkspace
   }
 
   async create(
@@ -149,18 +159,23 @@ export class ClientWorkspaceRepository {
         updatedAt: now,
       }
     }
-    const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc()
-    const now = Timestamp.now()
-    await docRef.set({
-      ...workspace,
-      createdAt: now,
-      updatedAt: now,
-    })
-    return {
-      ...workspace,
-      id: docRef.id,
-      createdAt: now.toDate().toISOString(),
-      updatedAt: now.toDate().toISOString(),
+    try {
+      const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc()
+      const now = Timestamp.now()
+      await docRef.set({
+        ...workspace,
+        createdAt: now,
+        updatedAt: now,
+      })
+      return {
+        ...workspace,
+        id: docRef.id,
+        createdAt: now.toDate().toISOString(),
+        updatedAt: now.toDate().toISOString(),
+      }
+    } catch (error) {
+      console.error("Failed to create workspace:", error)
+      throw new Error("Failed to create client workspace")
     }
   }
 
@@ -188,25 +203,31 @@ export class ClientWorkspaceRepository {
       return nextWorkspace
     }
 
-    const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
-    const snapshot = await docRef.get()
-    if (!snapshot.exists) {
-      return null
+    try {
+      const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
+      const snapshot = await docRef.get()
+      if (!snapshot.exists) {
+        return null
+      }
+      const now = Timestamp.now()
+      await docRef.update({
+        ...updates,
+        updatedAt: now,
+      })
+      // Re-fetch to get the latest data after update
+      const updatedSnapshot = await docRef.get()
+      const data = updatedSnapshot.data()
+      return {
+        ...data,
+        id: updatedSnapshot.id,
+        createdAt: toIsoString(data?.createdAt),
+        updatedAt: toIsoString(data?.updatedAt),
+        lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+      } as ClientWorkspace
+    } catch (error) {
+      console.error("Failed to update workspace:", error)
+      throw new Error("Failed to update client workspace")
     }
-    const now = Timestamp.now()
-    await docRef.update({
-      ...updates,
-      updatedAt: now,
-    })
-    const data = snapshot.data()
-    return {
-      ...data,
-      ...updates,
-      id: snapshot.id,
-      createdAt: toIsoString(data?.createdAt),
-      updatedAt: now.toDate().toISOString(),
-      lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
-    } as ClientWorkspace
   }
 
   async appendTimelineEvent(
@@ -226,22 +247,27 @@ export class ClientWorkspaceRepository {
       return newEvent
     }
 
-    const now = Timestamp.now()
-    const docRef = adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .doc(workspaceId)
-      .collection(TIMELINE_COLLECTION)
-      .doc()
-    await docRef.set({
-      ...event,
-      clientWorkspaceId: workspaceId,
-      createdAt: now,
-    })
-    return {
-      ...event,
-      id: docRef.id,
-      clientWorkspaceId: workspaceId,
-      createdAt: now.toDate().toISOString(),
+    try {
+      const now = Timestamp.now()
+      const docRef = adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .doc(workspaceId)
+        .collection(TIMELINE_COLLECTION)
+        .doc()
+      await docRef.set({
+        ...event,
+        clientWorkspaceId: workspaceId,
+        createdAt: now,
+      })
+      return {
+        ...event,
+        id: docRef.id,
+        clientWorkspaceId: workspaceId,
+        createdAt: now.toDate().toISOString(),
+      }
+    } catch (error) {
+      console.error("Failed to append timeline event:", error)
+      throw new Error("Failed to add timeline event")
     }
   }
 
@@ -250,21 +276,26 @@ export class ClientWorkspaceRepository {
       console.warn("Firebase Admin not initialized. Returning mock timeline.")
       return mockTimeline.filter((event) => event.clientWorkspaceId === workspaceId).slice(0, limitCount)
     }
-    const snapshot = await adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .doc(workspaceId)
-      .collection(TIMELINE_COLLECTION)
-      .orderBy("createdAt", "desc")
-      .limit(limitCount)
-      .get()
-    return snapshot.docs.map((doc) => {
-      const data = doc.data()
-      return {
-        ...data,
-        id: doc.id,
-        createdAt: toIsoString(data?.createdAt),
-      } as TimelineEvent
-    })
+    try {
+      const snapshot = await adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .doc(workspaceId)
+        .collection(TIMELINE_COLLECTION)
+        .orderBy("createdAt", "desc")
+        .limit(limitCount)
+        .get()
+      return snapshot.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: toIsoString(data?.createdAt),
+        } as TimelineEvent
+      })
+    } catch (error) {
+      console.error("Failed to fetch timeline:", error)
+      throw new Error("Failed to fetch timeline events")
+    }
   }
 
   async addTimelineEvent(
@@ -283,22 +314,27 @@ export class ClientWorkspaceRepository {
       mockTimeline.unshift(newEvent)
       return newEvent
     }
-    const docRef = adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .doc(workspaceId)
-      .collection(TIMELINE_COLLECTION)
-      .doc()
-    const now = Timestamp.now()
-    await docRef.set({
-      ...event,
-      clientWorkspaceId: workspaceId,
-      createdAt: now,
-    })
-    return {
-      ...event,
-      id: docRef.id,
-      clientWorkspaceId: workspaceId,
-      createdAt: now.toDate().toISOString(),
+    try {
+      const docRef = adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .doc(workspaceId)
+        .collection(TIMELINE_COLLECTION)
+        .doc()
+      const now = Timestamp.now()
+      await docRef.set({
+        ...event,
+        clientWorkspaceId: workspaceId,
+        createdAt: now,
+      })
+      return {
+        ...event,
+        id: docRef.id,
+        clientWorkspaceId: workspaceId,
+        createdAt: now.toDate().toISOString(),
+      }
+    } catch (error) {
+      console.error("Failed to add timeline event:", error)
+      throw new Error("Failed to add timeline event")
     }
   }
 }

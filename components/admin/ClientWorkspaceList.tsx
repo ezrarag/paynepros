@@ -38,11 +38,15 @@ type BulkUpdateInput = {
 
 type BulkIntakeLinkResult = { workspaceId: string; url: string }
 
+type ActionResult<T = void> = 
+  | { success: true; data: T }
+  | { success: false; error: string }
+
 interface ClientWorkspaceListProps {
   workspaces: ClientWorkspace[]
-  createClient: (input: CreateClientInput) => Promise<{ id: string }>
-  bulkUpdate: (input: BulkUpdateInput) => Promise<void>
-  bulkGenerateIntakeLinks: (workspaceIds: string[]) => Promise<BulkIntakeLinkResult[]>
+  createClient: (input: CreateClientInput) => Promise<ActionResult<{ id: string }>>
+  bulkUpdate: (input: BulkUpdateInput) => Promise<ActionResult>
+  bulkGenerateIntakeLinks: (workspaceIds: string[]) => Promise<ActionResult<BulkIntakeLinkResult[]>>
 }
 
 export function ClientWorkspaceList({
@@ -121,32 +125,44 @@ export function ClientWorkspaceList({
     setNewClientTaxYears([])
   }
 
+  const [error, setError] = useState<string | null>(null)
+
   const submitNewClient = () => {
     if (!newClientName.trim()) {
       return
     }
+    setError(null)
     startTransition(async () => {
-      const response = await createClient({
+      const result = await createClient({
         name: newClientName.trim(),
         email: newClientEmail.trim() || undefined,
         phone: newClientPhone.trim() || undefined,
         tags: newClientTags,
         taxYears: newClientTaxYears,
       })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
       resetNewClientForm()
       setNewClientOpen(false)
-      router.push(`/admin/clients/${response.id}`)
+      router.push(`/admin/clients/${result.data.id}`)
     })
   }
 
   const runBulkTagAction = () => {
     if (selectedIds.length === 0) return
+    setError(null)
     startTransition(async () => {
-      await bulkUpdate({
+      const result = await bulkUpdate({
         workspaceIds: selectedIds,
         action: bulkTagAction,
         tag: bulkTagValue,
       })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
       setSelectedIds([])
       router.refresh()
     })
@@ -154,12 +170,17 @@ export function ClientWorkspaceList({
 
   const runBulkStatusUpdate = () => {
     if (selectedIds.length === 0) return
+    setError(null)
     startTransition(async () => {
-      await bulkUpdate({
+      const result = await bulkUpdate({
         workspaceIds: selectedIds,
         action: "set_status",
         status: bulkStatusValue,
       })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
       setSelectedIds([])
       router.refresh()
     })
@@ -167,9 +188,14 @@ export function ClientWorkspaceList({
 
   const runBulkIntakeLinks = () => {
     if (selectedIds.length === 0) return
+    setError(null)
     startTransition(async () => {
-      const links = await bulkGenerateIntakeLinks(selectedIds)
-      setGeneratedLinks(links)
+      const result = await bulkGenerateIntakeLinks(selectedIds)
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+      setGeneratedLinks(result.data)
     })
   }
 
@@ -187,6 +213,11 @@ export function ClientWorkspaceList({
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+          {error}
+        </div>
+      )}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Client Workspaces</h1>

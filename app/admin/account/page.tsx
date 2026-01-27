@@ -1,9 +1,10 @@
 // TEMPORARILY DISABLED AUTH CHECK
 // import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, XCircle, Link2 } from "lucide-react"
+import { CheckCircle2, XCircle, Link2, Shield } from "lucide-react"
 
 export default async function AccountPage() {
   // TEMPORARILY DISABLED - Allow access without auth
@@ -145,6 +146,30 @@ export default async function AccountPage() {
               <a href="/admin/subscription">Activate Subscription</a>
             </Button>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Security & Compliance
+          </CardTitle>
+          <CardDescription>
+            Guidelines for handling sensitive client data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Review our internal security guidelines for handling SSNs, banking information, 
+            and other sensitive tax documents.
+          </p>
+          <Button asChild variant="outline">
+            <Link href="/admin/security">
+              <Shield className="h-4 w-4 mr-2" />
+              View Security Center
+            </Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

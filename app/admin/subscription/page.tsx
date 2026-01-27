@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Check } from "lucide-react"
@@ -20,6 +21,8 @@ const features = [
 export default function SubscriptionPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const lockedModule = searchParams.get("locked")
 
   const handleActivate = async () => {
     setIsLoading(true)
@@ -61,6 +64,18 @@ export default function SubscriptionPage() {
           Activate your Readyaimgo C-Suite plan to unlock all admin features
         </p>
       </div>
+
+      {lockedModule && (
+        <Card className="max-w-2xl border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle>Module locked</CardTitle>
+            <CardDescription>
+              Activate Readyaimgo to unlock {lockedModule.toLowerCase()} tools and
+              workflows.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       <Card className="max-w-2xl">
         <CardHeader>

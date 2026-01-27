@@ -27,20 +27,25 @@ export class IntakeResponseRepository {
         submittedAt: new Date().toISOString(),
       }
     }
-    const docRef = adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .doc(response.clientWorkspaceId)
-      .collection(INTAKE_RESPONSES_COLLECTION)
-      .doc()
-    const now = Timestamp.now()
-    await docRef.set({
-      ...response,
-      submittedAt: now,
-    })
-    return {
-      ...response,
-      id: docRef.id,
-      submittedAt: now.toDate().toISOString(),
+    try {
+      const docRef = adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .doc(response.clientWorkspaceId)
+        .collection(INTAKE_RESPONSES_COLLECTION)
+        .doc()
+      const now = Timestamp.now()
+      await docRef.set({
+        ...response,
+        submittedAt: now,
+      })
+      return {
+        ...response,
+        id: docRef.id,
+        submittedAt: now.toDate().toISOString(),
+      }
+    } catch (error) {
+      console.error("Failed to create intake response:", error)
+      throw new Error("Failed to save intake response")
     }
   }
 
@@ -51,23 +56,28 @@ export class IntakeResponseRepository {
       console.warn("Firebase Admin not initialized. Returning null intake response.")
       return null
     }
-    const snapshot = await adminDb
-      .collection(WORKSPACES_COLLECTION)
-      .doc(workspaceId)
-      .collection(INTAKE_RESPONSES_COLLECTION)
-      .orderBy("submittedAt", "desc")
-      .limit(1)
-      .get()
-    if (snapshot.empty) {
-      return null
+    try {
+      const snapshot = await adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .doc(workspaceId)
+        .collection(INTAKE_RESPONSES_COLLECTION)
+        .orderBy("submittedAt", "desc")
+        .limit(1)
+        .get()
+      if (snapshot.empty) {
+        return null
+      }
+      const doc = snapshot.docs[0]
+      const data = doc.data()
+      return {
+        ...data,
+        id: doc.id,
+        submittedAt: toIsoString(data?.submittedAt),
+      } as IntakeResponse
+    } catch (error) {
+      console.error("Failed to find intake response:", error)
+      throw new Error("Failed to fetch intake response")
     }
-    const doc = snapshot.docs[0]
-    const data = doc.data()
-    return {
-      ...data,
-      id: doc.id,
-      submittedAt: toIsoString(data?.submittedAt),
-    } as IntakeResponse
   }
 }
 

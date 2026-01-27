@@ -2,7 +2,16 @@ import Link from "next/link"
 import { ClientWorkspaceDetails } from "@/components/admin/ClientWorkspaceDetails"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { updateChecklistStatus, updateClient, uploadClientForm } from "./actions"
+import {
+  updateChecklistStatus,
+  updateClient,
+  uploadClientForm,
+  emailForm,
+  faxForm,
+  mailForm,
+  saveMileageCalculation,
+  saveScheduleCCalculation,
+} from "./actions"
 
 export default async function ClientWorkspacePage({
   params,
@@ -40,6 +49,11 @@ export default async function ClientWorkspacePage({
       updateClient={updateClient}
       updateChecklistStatus={updateChecklistStatus}
       uploadClientForm={uploadClientForm}
+      emailForm={emailForm}
+      faxForm={faxForm}
+      mailForm={mailForm}
+      saveMileageCalculation={saveMileageCalculation}
+      saveScheduleCCalculation={saveScheduleCCalculation}
     />
   )
 }
