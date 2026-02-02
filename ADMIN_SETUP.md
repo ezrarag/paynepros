@@ -70,10 +70,21 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 ```
 
-6. Download Firebase Admin SDK service account JSON and set:
-```env
-FIREBASE_SERVICE_ACCOUNT='{"type":"service_account",...}'
-```
+6. For **server-side Firestore** (admin client list, create client, etc.), use one of:
+
+   **Option A – JSON (single env var):**
+   ```env
+   FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"...","client_email":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"}'
+   ```
+
+   **Option B – Split vars** (e.g. for Vercel; private key newlines as `\n` are handled):
+   ```env
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   ```
+
+   Without either, the app falls back to in-memory mock data (new clients work locally but are not persisted).
 
 7. Deploy Firestore rules:
 ```bash

@@ -1,13 +1,18 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { auth } from "@/auth.edge"
 import { PASSWORD_COOKIE_NAME } from "@/lib/passwords"
 
-export default function middleware(req: NextRequest) {
+export default auth((req) => {
   const { pathname } = req.nextUrl
-  
-  // Allow access to password page and API routes
+
+  // Admin: NextAuth authorized() already ran; if we're here, session is valid or we're on login
+  if (pathname.startsWith("/admin")) {
+    return NextResponse.next()
+  }
+
+  // Allow password page and static assets
   if (
     pathname === "/password" ||
-    pathname.startsWith("/api/auth/") ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon")
@@ -15,11 +20,9 @@ export default function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check for password authentication cookie
+  // Public site: password cookie
   const passwordCookie = req.cookies.get(PASSWORD_COOKIE_NAME)
   const isAuthenticated = passwordCookie && passwordCookie.value === "authenticated"
-
-  // If not authenticated, redirect to password page
   if (!isAuthenticated) {
     const redirectUrl = new URL("/password", req.url)
     redirectUrl.searchParams.set("redirect", pathname)
@@ -27,7 +30,7 @@ export default function middleware(req: NextRequest) {
   }
 
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],

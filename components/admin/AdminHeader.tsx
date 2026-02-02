@@ -3,13 +3,16 @@
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { LogOut, User, HelpCircle } from "lucide-react"
+import type { AdminRole } from "@/lib/types/admin"
 
 interface AdminHeaderProps {
   user: {
     name?: string | null
     email?: string | null
     image?: string | null
+    role?: AdminRole
   }
 }
 
@@ -41,6 +44,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
             </div>
           )}
           <span className="font-medium">{user.name || user.email}</span>
+          {user.role && (
+            <Badge
+              variant={user.role === "OWNER" ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {user.role}
+            </Badge>
+          )}
         </div>
         <Button
           variant="outline"

@@ -150,14 +150,17 @@ export class ClientWorkspaceRepository {
     workspace: Omit<ClientWorkspace, "id" | "createdAt" | "updatedAt">
   ): Promise<ClientWorkspace> {
     if (!adminDb) {
-      console.warn("Firebase Admin not initialized. Returning mock workspace.")
+      console.warn("Firebase Admin not initialized. Creating mock workspace (in-memory).")
       const now = new Date().toISOString()
-      return {
+      const id = `mock-workspace-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      const newWorkspace: ClientWorkspace = {
         ...workspace,
-        id: "mock-workspace-id",
+        id,
         createdAt: now,
         updatedAt: now,
       }
+      mockWorkspaces = [newWorkspace, ...mockWorkspaces]
+      return newWorkspace
     }
     try {
       const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc()
