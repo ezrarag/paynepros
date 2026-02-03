@@ -1,4 +1,3 @@
-import "server-only"
 import { adminDb, Timestamp } from '@/lib/firebase/admin'
 
 export interface Wallet {

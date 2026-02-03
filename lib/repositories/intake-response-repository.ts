@@ -1,4 +1,3 @@
-import "server-only"
 import { adminDb, Timestamp } from "@/lib/firebase/admin"
 import { IntakeResponse } from "@/lib/types/client-workspace"
 

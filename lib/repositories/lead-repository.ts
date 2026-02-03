@@ -1,4 +1,3 @@
-import "server-only"
 import { Lead } from '@/packages/core'
 import { adminDb, Timestamp } from '@/lib/firebase/admin'
 

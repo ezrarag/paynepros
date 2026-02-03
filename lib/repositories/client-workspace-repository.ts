@@ -1,4 +1,3 @@
-import "server-only"
 import { randomUUID } from "crypto"
 import { adminDb, Timestamp } from "@/lib/firebase/admin"
 import { ClientWorkspace, TimelineEvent } from "@/lib/types/client-workspace"

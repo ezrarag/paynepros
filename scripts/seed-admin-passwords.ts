@@ -19,9 +19,23 @@
  * - Set Firebase Admin env vars (FIREBASE_SERVICE_ACCOUNT or FIREBASE_*)
  */
 
+/**
+ * Note: We use relative imports here because tsx doesn't resolve @/ aliases.
+ * The repositories no longer have "server-only" so they can be imported in Node scripts.
+ */
 import bcrypt from "bcryptjs"
-import { adminUserRepository } from "../lib/repositories/admin-user-repository"
-import { adminDb } from "../lib/firebase/admin"
+
+// Use dynamic import with proper path resolution for tsx
+const getAdminDb = async () => {
+  // tsx needs explicit file extension or index resolution
+  const { adminDb } = await import("../lib/firebase/admin")
+  return adminDb
+}
+
+const getAdminUserRepository = async () => {
+  const { adminUserRepository } = await import("../lib/repositories/admin-user-repository")
+  return adminUserRepository
+}
 
 const TEMP_PASSWORD = process.env.TEMP_PASSWORD || "temp123"
 const TENANT_ID = "paynepros"
@@ -31,6 +45,9 @@ async function seedAdminPasswords() {
   console.log(`📋 Tenant: ${TENANT_ID}`)
   console.log(`🔑 Temp password: ${TEMP_PASSWORD}`)
   console.log("")
+
+  const adminDb = await getAdminDb()
+  const adminUserRepository = await getAdminUserRepository()
 
   if (!adminDb) {
     console.error("❌ Firebase Admin not initialized!")

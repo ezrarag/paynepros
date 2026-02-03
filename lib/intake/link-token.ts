@@ -1,4 +1,3 @@
-import "server-only"
 import jwt, { JwtPayload, TokenExpiredError } from "jsonwebtoken"
 import type { IntakeLinkKind } from "@/lib/types/client-workspace"
 
