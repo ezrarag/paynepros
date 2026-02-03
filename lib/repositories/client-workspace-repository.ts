@@ -6,14 +6,23 @@ import { ClientWorkspace, TimelineEvent } from "@/lib/types/client-workspace"
 const WORKSPACES_COLLECTION = "clientWorkspaces"
 const TIMELINE_COLLECTION = "timeline"
 
-const toIsoString = (value?: FirebaseFirestore.Timestamp | Date | null) => {
+const toIsoString = (value?: FirebaseFirestore.Timestamp | Date | string | null) => {
   if (!value) {
     return new Date().toISOString()
+  }
+  // Already an ISO string
+  if (typeof value === "string") {
+    return value
   }
   if (value instanceof Date) {
     return value.toISOString()
   }
-  return value.toDate().toISOString()
+  // Firestore Timestamp - check if toDate exists
+  if (typeof value.toDate === "function") {
+    return value.toDate().toISOString()
+  }
+  // Fallback for unknown types
+  return new Date().toISOString()
 }
 
 let mockWorkspaces: ClientWorkspace[] = [
@@ -179,6 +188,27 @@ export class ClientWorkspaceRepository {
     } catch (error) {
       console.error("Failed to create workspace:", error)
       throw new Error("Failed to create client workspace")
+    }
+  }
+
+  async delete(workspaceId: string): Promise<boolean> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Deleting mock workspace.")
+      const index = mockWorkspaces.findIndex((w) => w.id === workspaceId)
+      if (index === -1) return false
+      mockWorkspaces = mockWorkspaces.filter((w) => w.id !== workspaceId)
+      mockTimeline = mockTimeline.filter((e) => e.clientWorkspaceId !== workspaceId)
+      return true
+    }
+    try {
+      const docRef = adminDb.collection(WORKSPACES_COLLECTION).doc(workspaceId)
+      const snapshot = await docRef.get()
+      if (!snapshot.exists) return false
+      await docRef.delete()
+      return true
+    } catch (error) {
+      console.error("Failed to delete workspace:", error)
+      throw new Error("Failed to delete client workspace")
     }
   }
 

@@ -16,12 +16,13 @@ import {
 
 interface IntakeFlowProps {
   token: string
-  workspaceId: string
+  workspaceId?: string | null
+  kind?: "existing_workspace" | "new_client"
 }
 
 type IntakeFormState = Record<string, any>
 
-export function IntakeFlow({ token, workspaceId }: IntakeFlowProps) {
+export function IntakeFlow({ token, workspaceId, kind }: IntakeFlowProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [formState, setFormState] = useState<IntakeFormState>({})
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +49,10 @@ export function IntakeFlow({ token, workspaceId }: IntakeFlowProps) {
       const response = await fetch(`/api/intake-links/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responses: formState, clientWorkspaceId: workspaceId }),
+        body: JSON.stringify({
+          responses: formState,
+          ...(workspaceId != null && { clientWorkspaceId: workspaceId }),
+        }),
       })
       if (!response.ok) {
         const data = await response.json()

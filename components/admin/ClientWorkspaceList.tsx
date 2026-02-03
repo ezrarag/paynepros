@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CreateIntakeLinkButton } from "@/components/admin/CreateIntakeLinkButton"
+import { NewClientIntakeLinkButton } from "@/components/admin/NewClientIntakeLinkButton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -225,8 +226,9 @@ export function ClientWorkspaceList({
             Central source of truth for documents, tasks, messages, and payments.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => setNewClientOpen(true)}>New Client</Button>
+          <NewClientIntakeLinkButton />
         </div>
       </div>
 

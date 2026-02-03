@@ -1,8 +1,10 @@
 "use server"
 
-import { createHash, randomBytes } from "crypto"
+import { createHash } from "crypto"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
+import { checklistDefaults } from "@/lib/tax-return-checklist"
+import { createIntakeLinkToken } from "@/lib/intake/link-token"
 
 export type ActionResult<T = void> = 
   | { success: true; data: T }
@@ -27,12 +29,26 @@ export async function createClient(input: {
       },
       tags: input.tags,
       taxYears: input.taxYears,
+      taxReturnChecklist: checklistDefaults,
       lastActivityAt: now,
     })
     return { success: true, data: { id: workspace.id } }
   } catch (error) {
     console.error("Failed to create client:", error)
     return { success: false, error: "Failed to create client. Please try again." }
+  }
+}
+
+export async function deleteClient(workspaceId: string): Promise<ActionResult> {
+  try {
+    const deleted = await clientWorkspaceRepository.delete(workspaceId)
+    if (!deleted) {
+      return { success: false, error: "Client not found" }
+    }
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to delete client:", error)
+    return { success: false, error: "Failed to delete client. Please try again." }
   }
 }
 
@@ -80,12 +96,13 @@ export async function bulkGenerateIntakeLinks(
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
     const createdBy = "mock-admin-id"
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
     const results = await Promise.all(
       workspaceIds.map(async (workspaceId) => {
-        const token = randomBytes(32).toString("hex")
+        const token = createIntakeLinkToken({ kind: "existing_workspace", workspaceId, expiresAt })
         const tokenHash = createHash("sha256").update(token).digest("hex")
-        const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
         await intakeLinkRepository.create({
+          kind: "existing_workspace",
           clientWorkspaceId: workspaceId,
           tokenHash,
           tokenLast4: token.slice(-4),

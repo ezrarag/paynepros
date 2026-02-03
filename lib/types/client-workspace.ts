@@ -45,9 +45,12 @@ export interface ClientWorkspace {
   updatedAt: string
 }
 
+export type IntakeLinkKind = "existing_workspace" | "new_client"
+
 export interface IntakeLink {
   id: string
-  clientWorkspaceId: string
+  kind: IntakeLinkKind
+  clientWorkspaceId: string | null
   tokenHash: string
   tokenLast4: string
   channels: IntakeChannel[]
@@ -55,6 +58,7 @@ export interface IntakeLink {
   createdBy: string
   createdAt: string
   expiresAt: string
+  usedAt?: string
 }
 
 export interface IntakeResponse {

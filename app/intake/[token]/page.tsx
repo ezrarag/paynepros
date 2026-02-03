@@ -2,8 +2,13 @@ import { IntakeFlow } from "@/components/intake/IntakeFlow"
 import { verifyIntakeLinkToken } from "@/lib/intake/link-token"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function IntakePage({ params }: { params: { token: string } }) {
-  const verification = verifyIntakeLinkToken(params.token)
+export default async function IntakePage({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}) {
+  const { token } = await params
+  const verification = verifyIntakeLinkToken(token)
   if (verification.status !== "valid") {
     const invalidMessage =
       verification.status === "expired"
@@ -39,7 +44,11 @@ export default function IntakePage({ params }: { params: { token: string } }) {
             Complete the intake so we can keep your workspace up to date.
           </p>
         </div>
-        <IntakeFlow token={params.token} workspaceId={verification.payload.workspaceId} />
+        <IntakeFlow
+          token={token}
+          workspaceId={verification.payload.workspaceId ?? undefined}
+          kind={verification.payload.kind}
+        />
       </div>
     </div>
   )

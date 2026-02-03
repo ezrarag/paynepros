@@ -4,7 +4,6 @@ import Google from "next-auth/providers/google"
 import Facebook from "next-auth/providers/facebook"
 import Apple from "next-auth/providers/apple"
 import Credentials from "next-auth/providers/credentials"
-import { getAdminUserByEmail } from "@/lib/mock/admin"
 
 // Instagram OAuth via Facebook (Instagram Basic Display API)
 const InstagramProvider = {
@@ -41,7 +40,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
     // Instagram provider (custom)
     InstagramProvider as any,
-    // Admin dashboard: test users (DeTania, Nija, Ezra). Used from /admin/login only.
+    // Admin dashboard: Firestore-backed credentials with bcrypt verification
     Credentials({
       id: "admin",
       name: "Admin",
@@ -51,16 +50,51 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         const email = credentials?.email as string | undefined
-        if (!email) return null
-        const adminUser = getAdminUserByEmail(email)
-        if (!adminUser) return null
-        // For local testing: accept any password or none
-        return {
-          id: adminUser.id,
-          name: adminUser.name,
-          email: adminUser.email,
-          tenantId: adminUser.tenantId,
-          adminRole: adminUser.role,
+        const password = credentials?.password as string | undefined
+
+        if (!email || !password) {
+          return null
+        }
+
+        try {
+          // Dynamic import to prevent bundling issues
+          const { adminUserRepository } = await import(
+            "@/lib/repositories/admin-user-repository"
+          )
+
+          // Verify password using bcrypt
+          const isValid = await adminUserRepository.verifyPassword(email, password)
+          if (!isValid) {
+            return null
+          }
+
+          // Get user details
+          const adminUser = await adminUserRepository.findByEmail(email)
+          if (!adminUser) {
+            return null
+          }
+
+          // Coerce active to boolean
+          const isActive =
+            adminUser.active === true ||
+            adminUser.active === "true" ||
+            (typeof adminUser.active === "string" &&
+              adminUser.active.toLowerCase() === "true")
+
+          if (!isActive) {
+            return null
+          }
+
+          return {
+            id: adminUser.id,
+            name: adminUser.name || adminUser.email,
+            email: adminUser.email,
+            tenantId: adminUser.tenantId,
+            adminRole: adminUser.role,
+          }
+        } catch (error) {
+          console.error("Admin authentication error:", error)
+          return null
         }
       },
     }),

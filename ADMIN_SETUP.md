@@ -86,6 +86,8 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 
    Without either, the app falls back to in-memory mock data (new clients work locally but are not persisted).
 
+   **Add New Client flow:** When Firebase Admin is configured, "New Client" creates a document in the `clientWorkspaces` Firestore collection and redirects to `/admin/clients/{id}`. The workspace detail page reads the same collection. If you see "Workspace not found", ensure (1) env vars are set and (2) you are not using a placeholder ID (e.g. `mock-workspace-id`); use the ID returned after creating a client.
+
 7. Deploy Firestore rules:
 ```bash
 firebase deploy --only firestore:rules

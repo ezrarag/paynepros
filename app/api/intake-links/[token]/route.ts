@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createHash } from "crypto"
 import { intakeResponseRepository } from "@/lib/repositories/intake-response-repository"
+import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { intakeSteps } from "@/lib/intake/steps"
 import { verifyIntakeLinkToken } from "@/lib/intake/link-token"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
+import { checklistDefaults } from "@/lib/tax-return-checklist"
+
+function parseTaxYears(value: unknown): number[] {
+  if (Array.isArray(value)) {
+    return value.map((v) => (typeof v === "string" ? parseInt(v, 10) : Number(v))).filter((n) => !Number.isNaN(n))
+  }
+  if (typeof value === "string") {
+    const n = parseInt(value, 10)
+    return Number.isNaN(n) ? [] : [n]
+  }
+  return []
+}
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
-  const verification = verifyIntakeLinkToken(params.token)
+  const { token } = await params
+  const verification = verifyIntakeLinkToken(token)
   if (verification.status === "expired") {
     return NextResponse.json({ error: "Link has expired" }, { status: 410 })
   }
@@ -18,16 +32,18 @@ export async function GET(
   }
   return NextResponse.json({
     valid: true,
-    clientWorkspaceId: verification.payload.workspaceId,
+    kind: verification.payload.kind,
+    clientWorkspaceId: verification.payload.workspaceId ?? null,
     steps: intakeSteps,
   })
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
-  const verification = verifyIntakeLinkToken(params.token)
+  const { token } = await params
+  const verification = verifyIntakeLinkToken(token)
   if (verification.status === "expired") {
     return NextResponse.json({ error: "Link has expired" }, { status: 410 })
   }
@@ -37,26 +53,89 @@ export async function POST(
 
   const body = await request.json()
   const { responses = {}, clientWorkspaceId } = body
-  if (clientWorkspaceId && clientWorkspaceId !== verification.payload.workspaceId) {
-    return NextResponse.json({ error: "Workspace mismatch" }, { status: 400 })
+  const payload = verification.payload
+
+  if (payload.kind === "existing_workspace") {
+    if (clientWorkspaceId && clientWorkspaceId !== payload.workspaceId) {
+      return NextResponse.json({ error: "Workspace mismatch" }, { status: 400 })
+    }
+    const workspaceId = payload.workspaceId!
+    const tokenHash = createHash("sha256").update(token).digest("hex")
+    const intakeResponse = await intakeResponseRepository.create({
+      clientWorkspaceId: workspaceId,
+      intakeLinkId: tokenHash,
+      responses,
+    })
+    await clientWorkspaceRepository.addTimelineEvent(workspaceId, {
+      type: "intake",
+      title: "Intake submitted",
+      description: "Client submitted the intake form.",
+      metadata: {
+        event: "intake_submitted",
+        intakeResponseId: intakeResponse.id,
+      },
+    })
+    return NextResponse.json({ intakeResponse })
   }
 
-  const tokenHash = createHash("sha256").update(params.token).digest("hex")
+  // new_client: validate required fields, create workspace, then response and timeline
+  const fullName = typeof responses.fullName === "string" ? responses.fullName.trim() : ""
+  const email = typeof responses.email === "string" ? responses.email.trim() : ""
+  const consentSignature = Boolean(responses.consentSignature)
+  if (!fullName) {
+    return NextResponse.json({ error: "Full name is required" }, { status: 400 })
+  }
+  if (!email) {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 })
+  }
+  if (!consentSignature) {
+    return NextResponse.json({ error: "You must authorize PaynePros to prepare your tax filing" }, { status: 400 })
+  }
+
+  const taxYears = parseTaxYears(responses.taxYears)
+  const incomeTypes = Array.isArray(responses.incomeTypes) ? responses.incomeTypes : []
+  const expenseCategories = Array.isArray(responses.expenseCategories) ? responses.expenseCategories : []
+  const tags = [...new Set([...incomeTypes, ...expenseCategories])].filter((t) => typeof t === "string").slice(0, 10)
+  const now = new Date().toISOString()
+
+  const workspace = await clientWorkspaceRepository.create({
+    displayName: fullName,
+    status: "new",
+    primaryContact: {
+      name: fullName,
+      email,
+      phone: typeof responses.phone === "string" ? responses.phone.trim() || undefined : undefined,
+    },
+    taxYears: taxYears.length > 0 ? taxYears : [new Date().getFullYear()],
+    tags,
+    taxReturnChecklist: checklistDefaults,
+    lastActivityAt: now,
+  })
+
+  const tokenHash = createHash("sha256").update(token).digest("hex")
   const intakeResponse = await intakeResponseRepository.create({
-    clientWorkspaceId: verification.payload.workspaceId,
+    clientWorkspaceId: workspace.id,
     intakeLinkId: tokenHash,
     responses,
   })
 
-  await clientWorkspaceRepository.addTimelineEvent(verification.payload.workspaceId, {
+  await clientWorkspaceRepository.addTimelineEvent(workspace.id, {
     type: "intake",
     title: "Intake submitted",
-    description: "Client submitted the intake form.",
+    description: "New client submitted the intake form.",
     metadata: {
       event: "intake_submitted",
       intakeResponseId: intakeResponse.id,
     },
   })
 
-  return NextResponse.json({ intakeResponse })
+  const intakeLink = await intakeLinkRepository.findByTokenHash(tokenHash)
+  if (intakeLink) {
+    await intakeLinkRepository.updateAfterUse(intakeLink.id, {
+      clientWorkspaceId: workspace.id,
+      usedAt: now,
+    })
+  }
+
+  return NextResponse.json({ intakeResponse, workspaceId: workspace.id })
 }

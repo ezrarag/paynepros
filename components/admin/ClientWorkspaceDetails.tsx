@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { AlertTriangle, Plus, Trash2 } from "lucide-react"
 import {
   ClientWorkspace,
+  IntakeResponse,
   TimelineEvent,
   FormSendRecord,
   EmailFormInput,
@@ -105,6 +106,7 @@ type ActionResult<T = void> =
 interface ClientWorkspaceDetailsProps {
   workspace: ClientWorkspace
   timeline: TimelineEvent[]
+  latestIntake?: IntakeResponse | null
   updateClient: (input: UpdateClientInput) => Promise<ActionResult>
   updateChecklistStatus: (formData: FormData) => Promise<ActionResult>
   uploadClientForm: (input: { workspaceId: string; formName: string }) => Promise<ActionResult>
@@ -113,11 +115,13 @@ interface ClientWorkspaceDetailsProps {
   mailForm: (input: MailFormInput) => Promise<ActionResult>
   saveMileageCalculation: (input: { workspaceId: string; year: number; miles: number }) => Promise<ActionResult<MileageCalculation>>
   saveScheduleCCalculation: (input: { workspaceId: string; rows: ScheduleCRow[] }) => Promise<ActionResult<ScheduleCCalculation>>
+  deleteClient: (workspaceId: string) => Promise<ActionResult>
 }
 
 export function ClientWorkspaceDetails({
   workspace,
   timeline,
+  latestIntake,
   updateClient,
   updateChecklistStatus,
   uploadClientForm,
@@ -126,6 +130,7 @@ export function ClientWorkspaceDetails({
   mailForm,
   saveMileageCalculation,
   saveScheduleCCalculation,
+  deleteClient,
 }: ClientWorkspaceDetailsProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
@@ -496,7 +501,7 @@ export function ClientWorkspaceDetails({
             QuickBooks-ready workspace • Status: {workspace.status.toUpperCase()}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             Edit Client
           </Button>
@@ -505,6 +510,27 @@ export function ClientWorkspaceDetails({
           </Button>
           <Button asChild>
             <Link href={`/admin/messaging?clientId=${workspace.id}`}>Open inbox</Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/50"
+            disabled={isPending}
+            onClick={() => {
+              if (typeof window !== "undefined" && window.confirm("Delete this client workspace? This cannot be undone.")) {
+                setError(null)
+                startTransition(async () => {
+                  const result = await deleteClient(workspace.id)
+                  if (!result.success) {
+                    setError(result.error)
+                    return
+                  }
+                  router.push("/admin/clients")
+                  router.refresh()
+                })
+              }
+            }}
+          >
+            Delete workspace
           </Button>
         </div>
       </div>
@@ -521,6 +547,42 @@ export function ClientWorkspaceDetails({
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {latestIntake && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Latest intake</CardTitle>
+                <CardDescription>
+                  Submitted{" "}
+                  {new Date(latestIntake.submittedAt).toLocaleDateString(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Name:</span>{" "}
+                  {String(latestIntake.responses?.fullName ?? "—")}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Email:</span>{" "}
+                  {String(latestIntake.responses?.email ?? "—")}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Tax years:</span>{" "}
+                  {Array.isArray(latestIntake.responses?.taxYears)
+                    ? latestIntake.responses.taxYears.join(", ")
+                    : "—"}
+                </div>
+                {latestIntake.responses?.notes && (
+                  <div className="pt-2 border-t">
+                    <span className="text-muted-foreground">Notes:</span>{" "}
+                    {String(latestIntake.responses.notes)}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>

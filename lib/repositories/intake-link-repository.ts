@@ -27,10 +27,12 @@ export class IntakeLinkRepository {
     try {
       const docRef = adminDb.collection(INTAKE_LINKS_COLLECTION).doc()
       const now = Timestamp.now()
+      const expiresAtTs = Timestamp.fromDate(new Date(link.expiresAt))
       await docRef.set({
         ...link,
+        clientWorkspaceId: link.clientWorkspaceId ?? null,
         createdAt: now,
-        expiresAt: Timestamp.fromDate(new Date(link.expiresAt)),
+        expiresAt: expiresAtTs,
       })
       return {
         ...link,
@@ -62,8 +64,10 @@ export class IntakeLinkRepository {
       return {
         ...data,
         id: doc.id,
+        clientWorkspaceId: data?.clientWorkspaceId ?? null,
         createdAt: toIsoString(data?.createdAt),
         expiresAt: toIsoString(data?.expiresAt),
+        usedAt: data?.usedAt ? toIsoString(data.usedAt) : undefined,
       } as IntakeLink
     } catch (error) {
       console.error("Failed to find intake link:", error)
@@ -82,6 +86,27 @@ export class IntakeLinkRepository {
       })
     } catch (error) {
       console.error("Failed to mark intake link as used:", error)
+      throw new Error("Failed to update intake link")
+    }
+  }
+
+  async updateAfterUse(
+    linkId: string,
+    data: { clientWorkspaceId: string; usedAt: string }
+  ): Promise<void> {
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Cannot update intake link.")
+      return
+    }
+    try {
+      const usedAtTs = Timestamp.fromDate(new Date(data.usedAt))
+      await adminDb.collection(INTAKE_LINKS_COLLECTION).doc(linkId).update({
+        status: "used",
+        clientWorkspaceId: data.clientWorkspaceId,
+        usedAt: usedAtTs,
+      })
+    } catch (error) {
+      console.error("Failed to update intake link after use:", error)
       throw new Error("Failed to update intake link")
     }
   }
