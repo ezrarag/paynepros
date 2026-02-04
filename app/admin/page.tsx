@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { listMessageMeta } from "@/lib/messages"
 import { getMessageMetaMetrics } from "@/lib/mock/admin"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
+import { integrationRepository } from "@/lib/repositories/integration-repository"
 import type { ClientWorkspace } from "@/lib/types/client-workspace"
 import type { MessageSummary, ClientQueueItem, TodayFocusMetrics } from "@/lib/types/command-center"
 import { normalizeChecklist } from "@/lib/tax-return-checklist"
@@ -89,10 +90,18 @@ export default async function AdminDashboard() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10)
   
-  // Fetch real message metadata
-  const { data: metaList } = await listMessageMeta()
-  const messageMetaMetrics = getMessageMetaMetrics(user.tenantId)
-  const totalUnread = messageMetaMetrics.unreadMessagesTotal
+  // Check if integrations are connected
+  const hasConnectedInbox = await integrationRepository.hasConnectedInbox(user.tenantId)
+
+  // Fetch real message metadata only if integrations are connected
+  let metaList = null
+  let totalUnread = 0
+  if (hasConnectedInbox) {
+    const result = await listMessageMeta()
+    metaList = result.data
+    const messageMetaMetrics = getMessageMetaMetrics(user.tenantId)
+    totalUnread = messageMetaMetrics.unreadMessagesTotal
+  }
 
   // Transform workspaces to queue items
   const clientQueue: ClientQueueItem[] = activeWorkspaces
@@ -104,21 +113,23 @@ export default async function AdminDashboard() {
       return bTime - aTime
     })
 
-  // Transform real messages to MessageSummary format
-  const recentMessages: Array<MessageSummary & { clientName: string }> = (metaList ?? [])
-    .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
-    .slice(0, 5)
-    .map((m) => {
-      const workspace = workspaces.find((w) => w.id === m.workspaceId)
-      return {
-        workspaceId: m.workspaceId,
-        channel: (m.channel === "facebook" ? "ig" : m.channel) as MessageSummary["channel"],
-        unreadCount: m.unread ? 1 : 0,
-        lastSnippet: m.snippetMasked ?? "",
-        lastAt: m.receivedAt,
-        clientName: workspace?.displayName ?? "Unknown",
-      }
-    })
+  // Transform real messages to MessageSummary format (only if integrations connected and messages exist)
+  const recentMessages: Array<MessageSummary & { clientName: string }> = hasConnectedInbox && metaList
+    ? metaList
+        .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
+        .slice(0, 5)
+        .map((m) => {
+          const workspace = workspaces.find((w) => w.id === m.workspaceId)
+          return {
+            workspaceId: m.workspaceId,
+            channel: (m.channel === "facebook" ? "ig" : m.channel) as MessageSummary["channel"],
+            unreadCount: m.unread ? 1 : 0,
+            lastSnippet: m.snippetMasked ?? "",
+            lastAt: m.receivedAt,
+            clientName: workspace?.displayName ?? "Unknown",
+          }
+        })
+    : []
 
   // Calculate real metrics
   const metrics = calculateMetrics(workspaces, totalUnread)
@@ -143,6 +154,46 @@ export default async function AdminDashboard() {
       <Suspense fallback={<div className="h-28 sm:h-32 rounded-lg border bg-muted animate-pulse" />}>
         <TodayFocusCard metrics={metrics} />
       </Suspense>
+
+      {recentTimelineEvents.length > 0 && (
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Activity Feed</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Last 10 timeline events across all clients</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="space-y-3">
+              {recentTimelineEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{event.workspaceName}</span>
+                      <span className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground">
+                        {event.type}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">{event.title}</p>
+                    {event.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{event.description}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(event.createdAt).toLocaleString()}
+                    </span>
+                    <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+                      <Link href={`/admin/clients/${event.workspaceId}`}>Open</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="p-4 sm:p-6">
@@ -187,50 +238,10 @@ export default async function AdminDashboard() {
         </div>
         <div className="lg:col-span-1 min-w-0">
           <Suspense fallback={<div className="h-64 sm:h-96 rounded-lg border bg-muted animate-pulse" />}>
-            <InboxSummary recentMessages={recentMessages} totalUnread={totalUnread} />
+            <InboxSummary recentMessages={recentMessages} totalUnread={totalUnread} hasConnectedInbox={hasConnectedInbox} />
           </Suspense>
         </div>
       </div>
-
-      {recentTimelineEvents.length > 0 && (
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg">Activity Feed</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Last 10 timeline events across all clients</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="space-y-3">
-              {recentTimelineEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">{event.workspaceName}</span>
-                      <span className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground">
-                        {event.type}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium">{event.title}</p>
-                    {event.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{event.description}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(event.createdAt).toLocaleString()}
-                    </span>
-                    <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
-                      <Link href={`/admin/clients/${event.workspaceId}`}>Open</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

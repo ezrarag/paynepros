@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
-import { X, Users, Clock, UserPlus, Eye } from "lucide-react"
+import { X, Users, Clock, UserPlus, Eye, GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 // Mock data for participants
@@ -23,9 +23,38 @@ const cohortRoles = [
   { id: "3", name: "Client Follow-up Coordinator", available: 3 },
 ]
 
-export function BeamDrawer() {
+type BeamDrawerProps = {
+  isSidebarCollapsed?: boolean
+}
+
+export function BeamDrawer({ isSidebarCollapsed = false }: BeamDrawerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isSidebarCollapsed)
   const drawerRef = useRef<HTMLDivElement>(null)
+
+  // Listen for sidebar collapse changes
+  useEffect(() => {
+    setSidebarCollapsed(isSidebarCollapsed)
+  }, [isSidebarCollapsed])
+
+  // Also listen to localStorage changes and custom events
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem("admin.sidebarCollapsed")
+      setSidebarCollapsed(saved === "true")
+    }
+    const handleCollapseChange = (e: CustomEvent<{ collapsed: boolean }>) => {
+      setSidebarCollapsed(e.detail.collapsed)
+    }
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("sidebarCollapseChange", handleCollapseChange as EventListener)
+    // Check initial state
+    handleStorageChange()
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("sidebarCollapseChange", handleCollapseChange as EventListener)
+    }
+  }, [])
 
   // Close on escape key
   useEffect(() => {
@@ -53,21 +82,28 @@ export function BeamDrawer() {
 
   return (
     <>
-      {/* BEAM Toggle Button - Fixed bottom-left, subtle styling */}
+      {/* BEAM Toggle Button - Fixed bottom-left, adjusts position based on sidebar collapse */}
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-4 left-4 z-40",
-          "flex items-center gap-1.5 px-2.5 py-1.5",
+          "fixed bottom-4 z-40",
+          sidebarCollapsed ? "left-4" : "left-[17rem]",
+          "flex items-center gap-1.5",
+          sidebarCollapsed ? "px-2 py-2" : "px-2.5 py-1.5",
           "text-xs font-medium text-muted-foreground",
           "bg-card border border-border rounded-md shadow-sm",
           "hover:bg-muted hover:text-foreground",
-          "transition-all duration-150",
+          "transition-all duration-300",
           "opacity-60 hover:opacity-100"
         )}
       >
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        BEAM
+        <GraduationCap className="h-4 w-4" />
+        {!sidebarCollapsed && (
+          <>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>BEAM</span>
+          </>
+        )}
       </button>
 
       {/* Drawer Overlay */}

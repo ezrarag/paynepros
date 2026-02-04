@@ -26,6 +26,21 @@ export function AdminShell({
   headerUser,
 }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Listen for sidebar collapse changes via custom event
+  useEffect(() => {
+    const handleCollapseChange = (e: CustomEvent<{ collapsed: boolean }>) => {
+      setSidebarCollapsed(e.detail.collapsed)
+    }
+    window.addEventListener("sidebarCollapseChange", handleCollapseChange as EventListener)
+    // Check initial state from localStorage
+    const saved = localStorage.getItem("admin.sidebarCollapsed")
+    setSidebarCollapsed(saved === "true")
+    return () => {
+      window.removeEventListener("sidebarCollapseChange", handleCollapseChange as EventListener)
+    }
+  }, [])
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -59,7 +74,7 @@ export function AdminShell({
         {/* Sidebar: drawer on mobile, static on desktop */}
         <aside
           className={cn(
-            "fixed top-14 sm:top-16 left-0 bottom-0 z-50 w-64 border-r bg-card",
+            "fixed top-14 sm:top-16 left-0 bottom-0 z-50 border-r bg-card",
             "transform transition-transform duration-200 ease-out",
             "md:relative md:top-0 md:z-0 md:translate-x-0 md:transition-none",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -75,7 +90,7 @@ export function AdminShell({
           {children}
         </main>
       </div>
-      <BeamDrawer />
+      <BeamDrawer isSidebarCollapsed={sidebarCollapsed} />
     </div>
   )
 }

@@ -166,7 +166,7 @@ export interface IntegrationStatus {
 }
 
 export const mockIntegrationStatus: IntegrationStatus[] = [
-  { provider: "gmail", connected: true, connectedAt: new Date().toISOString() },
+  { provider: "gmail", connected: false },
   { provider: "outlook", connected: false },
   { provider: "whatsapp", connected: false },
 ]
