@@ -4,7 +4,7 @@ import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LogOut, User, HelpCircle } from "lucide-react"
+import { LogOut, User, HelpCircle, Menu } from "lucide-react"
 import type { AdminRole } from "@/lib/types/admin"
 
 interface AdminHeaderProps {
@@ -14,23 +14,36 @@ interface AdminHeaderProps {
     image?: string | null
     role?: AdminRole
   }
+  /** Mobile: open sidebar (hamburger visible only on small screens) */
+  onMenuClick?: () => void
 }
 
-export function AdminHeader({ user }: AdminHeaderProps) {
+export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold">PaynePros Admin</h1>
+    <header className="h-14 sm:h-16 border-b bg-card flex items-center justify-between px-3 sm:px-6 gap-2">
+      <div className="flex items-center gap-2 min-w-0">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open menu"
+            className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
+        <h1 className="text-base sm:text-xl font-bold truncate">PaynePros Admin</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1 sm:gap-4 shrink-0">
         <Link
           href="/admin/security"
-          className="p-2 rounded-md hover:bg-muted transition-colors"
+          className="p-2 rounded-md hover:bg-muted transition-colors hidden sm:inline-flex"
           title="Security Center"
+          aria-label="Security Center"
         >
           <HelpCircle className="h-5 w-5 text-muted-foreground hover:text-foreground" />
         </Link>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="hidden sm:flex items-center gap-2 text-sm">
           {user.image && (
             <img
               src={user.image}
@@ -43,7 +56,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               <User className="h-4 w-4 text-primary-foreground" />
             </div>
           )}
-          <span className="font-medium">{user.name || user.email}</span>
+          <span className="font-medium max-w-[120px] truncate">{user.name || user.email}</span>
           {user.role && (
             <Badge
               variant={user.role === "OWNER" ? "default" : "secondary"}
@@ -57,9 +70,10 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           variant="outline"
           size="sm"
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className="text-xs sm:text-sm"
         >
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
+          <LogOut className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Sign Out</span>
         </Button>
       </div>
     </header>

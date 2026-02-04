@@ -33,15 +33,21 @@ export function ClientQueue({ items }: ClientQueueProps) {
 
   return (
     <Card id="urgent">
-      <CardHeader>
-        <CardTitle>Client Task Queue</CardTitle>
-        <CardDescription>Active workspaces sorted by priority and urgency</CardDescription>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-lg">Client Queue</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Active workspaces sorted by recent activity</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No active clients at this time
-          </p>
+          <div className="text-center py-6 sm:py-8 space-y-4">
+            <p className="text-sm text-muted-foreground">No active client queue yet</p>
+            <Button asChild size="sm">
+              <Link href="/admin/clients">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add New Client
+              </Link>
+            </Button>
+          </div>
         ) : (
           items.map((item) => {
             const activeTasks = item.tasks.filter((t) => t.status !== "done")
@@ -51,17 +57,17 @@ export function ClientQueue({ items }: ClientQueueProps) {
             return (
               <div
                 key={item.id}
-                className="border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors"
+                className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{item.clientName}</h3>
-                      <Badge variant="outline" className="text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                      <h3 className="font-semibold text-base sm:text-lg truncate">{item.clientName}</h3>
+                      <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
                         {item.statusLabel}
                       </Badge>
                       {unreadCount > 0 && (
-                        <Badge className="bg-blue-500 text-white text-xs">
+                        <Badge className="bg-blue-500 text-white text-[10px] sm:text-xs shrink-0">
                           {unreadCount} unread
                         </Badge>
                       )}
@@ -71,7 +77,7 @@ export function ClientQueue({ items }: ClientQueueProps) {
                         {item.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground"
+                            className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-muted rounded text-muted-foreground"
                           >
                             {tag}
                           </span>
@@ -81,21 +87,21 @@ export function ClientQueue({ items }: ClientQueueProps) {
                   </div>
                 </div>
 
-                {nextTasks.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Next tasks:</p>
-                    <ul className="list-disc list-inside space-y-1 text-sm">
+                {nextTasks.length > 0 ? (
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">Next tasks:</p>
+                    <ul className="list-disc list-inside space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
                       {nextTasks.map((task) => (
-                        <li key={task.id} className="flex items-center gap-2">
-                          <span>{task.title}</span>
+                        <li key={task.id} className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="break-words">{task.title}</span>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getPriorityColor(task.priority)}`}
+                            className={`text-[10px] sm:text-xs shrink-0 ${getPriorityColor(task.priority)}`}
                           >
                             {task.priority}
                           </Badge>
                           {task.assignedTo && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">
                               ({task.assignedTo})
                             </span>
                           )}
@@ -103,22 +109,37 @@ export function ClientQueue({ items }: ClientQueueProps) {
                       ))}
                     </ul>
                   </div>
+                ) : (
+                  <div className="text-xs sm:text-sm text-muted-foreground py-2">
+                    {item.statusLabel === "Missing documents" && (
+                      <p className="mb-2">Next step: Request documents</p>
+                    )}
+                    {item.statusLabel === "Needs review" && (
+                      <p className="mb-2">Next step: Review income</p>
+                    )}
+                    {item.statusLabel === "In progress" && (
+                      <p className="mb-2">Next step: Send intake link</p>
+                    )}
+                  </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <Button variant="outline" size="sm" asChild>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" asChild className="text-xs h-8 sm:h-9">
                     <Link href={`/admin/clients/${item.id}`}>
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Open Workspace
+                      <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 shrink-0" />
+                      <span className="hidden sm:inline">Open</span>
                     </Link>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setMessageModalOpen(item.id)}
+                    className="text-xs h-8 sm:h-9"
+                    disabled={true}
+                    title="Coming soon"
                   >
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    Send Reminder
+                    <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1 shrink-0" />
+                    <span className="hidden sm:inline">Reminder</span>
                   </Button>
                   {item.documentRequest &&
                     (item.documentRequest.status === "pending" ||
@@ -127,18 +148,28 @@ export function ClientQueue({ items }: ClientQueueProps) {
                         variant="outline"
                         size="sm"
                         onClick={() => setDocModalOpen(item.id)}
+                        className="text-xs h-8 sm:h-9"
+                        disabled={true}
+                        title="Coming soon"
                       >
-                        <FileText className="h-4 w-4 mr-1" />
-                        Request Docs
+                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1 shrink-0" />
+                        <span className="hidden sm:inline">Docs</span>
                       </Button>
                     )}
-                  <Button variant="outline" size="sm" onClick={() => setAssignModalOpen(item.id)}>
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Assign Task
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setAssignModalOpen(item.id)} 
+                    className="text-xs h-8 sm:h-9"
+                    disabled={true}
+                    title="Coming soon"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1 shrink-0" />
+                    <span className="hidden sm:inline">Assign</span>
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Mark Reviewed
+                  <Button variant="ghost" size="sm" className="text-xs h-8 sm:h-9" disabled={true} title="Coming soon">
+                    <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1 shrink-0" />
+                    <span className="hidden sm:inline">Reviewed</span>
                   </Button>
                 </div>
 

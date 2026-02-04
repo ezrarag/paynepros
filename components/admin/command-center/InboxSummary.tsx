@@ -37,33 +37,33 @@ export function InboxSummary({ recentMessages, totalUnread }: InboxSummaryProps)
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Inbox Summary</CardTitle>
-            <CardDescription>Recent messages and unread counts</CardDescription>
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-base sm:text-lg">Inbox Summary</CardTitle>
+            <CardDescription className="text-xs sm:text-sm truncate">Recent messages</CardDescription>
           </div>
           {totalUnread > 0 && (
-            <Badge className="bg-blue-500 text-white">{totalUnread} unread</Badge>
+            <Badge className="bg-blue-500 text-white text-xs shrink-0">{totalUnread} unread</Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {Object.keys(channelCounts).length > 0 && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             {Object.entries(channelCounts).map(([channel, count]) => {
               const Icon = channelIcons[channel as keyof typeof channelIcons]
               return (
                 <div
                   key={channel}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border bg-muted/50"
                 >
-                  {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-                  <span className="text-sm font-medium">
+                  {Icon && <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />}
+                  <span className="text-xs sm:text-sm font-medium">
                     {channelLabels[channel as keyof typeof channelLabels] || channel}
                   </span>
                   {count > 0 && (
-                    <Badge variant="secondary" className="ml-1">
+                    <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs">
                       {count}
                     </Badge>
                   )}
@@ -74,27 +74,27 @@ export function InboxSummary({ recentMessages, totalUnread }: InboxSummaryProps)
         )}
 
         {recentMessages.length > 0 ? (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">Recent messages:</p>
+          <div className="space-y-2 sm:space-y-3">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Recent:</p>
             {recentMessages.map((msg, idx) => (
               <div
                 key={`${msg.workspaceId}-${msg.channel}-${idx}`}
-                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border hover:bg-muted/50 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{msg.clientName}</span>
-                    <Badge variant="outline" className="text-xs">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                    <span className="font-medium text-xs sm:text-sm truncate">{msg.clientName}</span>
+                    <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
                       {channelLabels[msg.channel as keyof typeof channelLabels] || msg.channel}
                     </Badge>
                     {msg.unreadCount > 0 && (
-                      <Badge className="bg-blue-500 text-white text-xs">
+                      <Badge className="bg-blue-500 text-white text-[10px] sm:text-xs shrink-0">
                         {msg.unreadCount}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{msg.lastSnippet}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{msg.lastSnippet}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                     {new Date(msg.lastAt).toLocaleString()}
                   </p>
                 </div>
@@ -102,17 +102,27 @@ export function InboxSummary({ recentMessages, totalUnread }: InboxSummaryProps)
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No recent messages
-          </p>
+          <div className="text-center py-3 sm:py-4 space-y-3">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              No connected inboxes yet
+            </p>
+            <Button asChild variant="outline" className="w-full text-xs sm:text-sm" size="sm">
+              <Link href="/admin/integrations">
+                <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                Connect Integrations
+              </Link>
+            </Button>
+          </div>
         )}
 
-        <Button asChild className="w-full">
-          <Link href="/admin/messaging">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Go to Messaging
-          </Link>
-        </Button>
+        {recentMessages.length > 0 && (
+          <Button asChild className="w-full text-xs sm:text-sm" size="sm">
+            <Link href="/admin/messaging">
+              <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+              Messaging
+            </Link>
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
