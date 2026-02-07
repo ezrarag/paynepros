@@ -3,6 +3,7 @@ import { createHash } from "crypto"
 import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { IntakeChannel } from "@/lib/types/client-workspace"
 import { createIntakeLinkToken } from "@/lib/intake/link-token"
+import { getBaseUrl } from "@/lib/utils/url"
 
 const DEFAULT_EXPIRY_HOURS = 72
 
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
       expiresAt,
     })
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    // Get base URL from request (works in both localhost and Vercel)
+    const baseUrl = getBaseUrl(request)
     const url = `${baseUrl}/intake/${token}`
 
     return NextResponse.json({ url })

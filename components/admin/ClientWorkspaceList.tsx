@@ -191,7 +191,9 @@ export function ClientWorkspaceList({
     if (selectedIds.length === 0) return
     setError(null)
     startTransition(async () => {
-      const result = await bulkGenerateIntakeLinks(selectedIds)
+      // Pass the current origin so links use the correct domain (localhost or Vercel)
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : undefined
+      const result = await bulkGenerateIntakeLinks(selectedIds, baseUrl)
       if (!result.success) {
         setError(result.error)
         return

@@ -91,10 +91,15 @@ export async function bulkUpdate(input: {
 }
 
 export async function bulkGenerateIntakeLinks(
-  workspaceIds: string[]
+  workspaceIds: string[],
+  baseUrl?: string
 ): Promise<ActionResult<{ workspaceId: string; url: string }[]>> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    // Use provided baseUrl (from client), or fall back to environment variable
+    // Priority: client-provided baseUrl > NEXT_PUBLIC_APP_URL > VERCEL_URL > localhost
+    const url = baseUrl || 
+      process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
     const createdBy = "mock-admin-id"
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
     const results = await Promise.all(
@@ -111,7 +116,7 @@ export async function bulkGenerateIntakeLinks(
           createdBy,
           expiresAt,
         })
-        return { workspaceId, url: `${baseUrl}/intake/${token}` }
+        return { workspaceId, url: `${url}/intake/${token}` }
       })
     )
     return { success: true, data: results }
