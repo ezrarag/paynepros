@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { intakeSteps, IntakeStepField } from "@/lib/intake/steps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,14 +22,55 @@ interface IntakeFlowProps {
 
 type IntakeFormState = Record<string, any>
 
-export function IntakeFlow({ token, workspaceId, kind }: IntakeFlowProps) {
+export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initialKind }: IntakeFlowProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const [formState, setFormState] = useState<IntakeFormState>({})
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [workspaceId, setWorkspaceId] = useState<string | null | undefined>(initialWorkspaceId)
+  const [kind, setKind] = useState<"existing_workspace" | "new_client" | undefined>(initialKind)
+
+  // Fetch intake link data on mount
+  useEffect(() => {
+    const fetchIntakeLink = async () => {
+      try {
+        const response = await fetch(`/api/intake-links/${token}`)
+        if (!response.ok) {
+          const data = await response.json()
+          setError(data?.error || "Invalid or expired intake link")
+          setLoading(false)
+          return
+        }
+        const data = await response.json()
+        if (data.valid) {
+          setKind(data.kind)
+          setWorkspaceId(data.clientWorkspaceId)
+        } else {
+          setError("Invalid intake link")
+        }
+      } catch (err) {
+        setError("Failed to load intake link")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchIntakeLink()
+  }, [token])
 
   const currentStep = intakeSteps[stepIndex]
   const isLastStep = stepIndex === intakeSteps.length - 1
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading...</CardTitle>
+          <CardDescription>Validating intake link</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
 
   const handleInputChange = (fieldId: string, value: any) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }))

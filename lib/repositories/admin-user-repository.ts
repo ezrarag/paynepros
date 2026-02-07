@@ -20,8 +20,10 @@ export class AdminUserRepository {
    */
   async listByTenant(tenantId: string): Promise<AdminUser[]> {
     if (!adminDb) {
-      console.warn("Firebase Admin not initialized. Returning empty array.")
-      return []
+      // Mock mode: return mock admin users
+      console.warn("Firebase Admin not initialized. Returning mock admin users.")
+      const { mockAdminUsers } = await import("@/lib/mock/admin")
+      return mockAdminUsers.filter((u) => u.tenantId === tenantId)
     }
 
     try {
@@ -69,8 +71,22 @@ export class AdminUserRepository {
    */
   async findByEmail(email: string): Promise<(AdminUserDoc & { id: string }) | null> {
     if (!adminDb) {
-      console.warn("Firebase Admin not initialized. Returning null.")
-      return null
+      // Mock mode: return mock admin user
+      console.warn("Firebase Admin not initialized. Returning mock admin user.")
+      const { getAdminUserByEmail } = await import("@/lib/mock/admin")
+      const mockUser = getAdminUserByEmail(email)
+      if (!mockUser) {
+        return null
+      }
+      return {
+        id: mockUser.id,
+        email: mockUser.email,
+        name: mockUser.name,
+        tenantId: mockUser.tenantId,
+        role: mockUser.role,
+        active: true,
+        // No passwordHash in mock mode - password verification handles it
+      }
     }
 
     try {
@@ -133,8 +149,21 @@ export class AdminUserRepository {
 
   /**
    * Verify password using bcrypt.compare
+   * In mock mode (Firebase Admin disabled), accepts temp123 for any mock user
    */
   async verifyPassword(email: string, password: string): Promise<boolean> {
+    if (!adminDb) {
+      // Mock mode: check against mock admin users and accept temp123
+      console.warn("Firebase Admin not initialized. Using mock password verification.")
+      const { getAdminUserByEmail } = await import("@/lib/mock/admin")
+      const mockUser = getAdminUserByEmail(email)
+      if (!mockUser) {
+        return false
+      }
+      // In mock mode, accept "temp123" for any user
+      return password === "temp123"
+    }
+
     const user = await this.findByEmail(email)
     if (!user || !user.passwordHash) {
       return false

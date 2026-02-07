@@ -58,19 +58,19 @@ function PasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy via-navy-dark to-navy-light px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-offwhite rounded-lg shadow-xl p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-navy">Site Access</h1>
-            <p className="text-sm text-gray-600">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-navy via-navy-dark to-navy-light px-4 py-6 sm:py-8">
+      <div className="w-full max-w-sm sm:max-w-md">
+        <div className="bg-offwhite rounded-lg shadow-xl p-5 sm:p-8 space-y-4 sm:space-y-6">
+          <div className="text-center space-y-1 sm:space-y-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-navy">Site Access</h1>
+            <p className="text-xs sm:text-sm text-gray-600">
               Please enter the password to access this site
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-navy">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="password" className="text-navy text-sm">
                 Password
               </Label>
               <Input
@@ -79,29 +79,29 @@ function PasswordForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full"
+                className="w-full h-10 sm:h-11 text-base"
                 autoFocus
                 disabled={isLoading}
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded text-xs sm:text-sm">
                 {error}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-gold text-navy hover:bg-gold-dark"
+              className="w-full h-10 sm:h-11 bg-gold text-navy hover:bg-gold-dark text-sm sm:text-base"
               disabled={isLoading || !password}
             >
               {isLoading ? "Verifying..." : "Access Site"}
             </Button>
           </form>
 
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
+          <div className="text-center pt-3 sm:pt-4 border-t border-gray-200">
+            <p className="text-[10px] sm:text-xs text-gray-500">
               Don't have access?{" "}
               <a
                 href="https://readyaimgo.biz"
@@ -120,12 +120,12 @@ function PasswordForm() {
 export default function PasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy via-navy-dark to-navy-light px-4">
-        <div className="w-full max-w-md">
-          <div className="bg-offwhite rounded-lg shadow-xl p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold text-navy">Site Access</h1>
-              <p className="text-sm text-gray-600">Loading...</p>
+      <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-navy via-navy-dark to-navy-light px-4 py-6 sm:py-8">
+        <div className="w-full max-w-sm sm:max-w-md">
+          <div className="bg-offwhite rounded-lg shadow-xl p-5 sm:p-8 space-y-4 sm:space-y-6">
+            <div className="text-center space-y-1 sm:space-y-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-navy">Site Access</h1>
+              <p className="text-xs sm:text-sm text-gray-600">Loading...</p>
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ import type { MessageSummary, ClientQueueItem, TodayFocusMetrics } from "@/lib/t
 import { normalizeChecklist } from "@/lib/tax-return-checklist"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UserPlus, Link2, MessageSquare, ClipboardList } from "lucide-react"
+import { QuickActions } from "@/components/admin/QuickActions"
 
 function calculateMetrics(workspaces: ClientWorkspace[], unreadMessagesTotal: number): TodayFocusMetrics {
   const now = new Date()
@@ -201,32 +201,7 @@ export default async function AdminDashboard() {
           <CardDescription className="text-xs sm:text-sm">Common tasks and workflows</CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2">
-              <Link href="/admin/clients">
-                <UserPlus className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">New Client</span>
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2" disabled title="Coming soon">
-              <Link href="#">
-                <Link2 className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Generate Intake Link</span>
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2">
-              <Link href="/admin/messaging">
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Open Messaging</span>
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2">
-              <Link href="/admin/forms">
-                <ClipboardList className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Open Forms</span>
-              </Link>
-            </Button>
-          </div>
+          <QuickActions workspaces={workspaces} />
         </CardContent>
       </Card>
 

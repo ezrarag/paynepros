@@ -53,6 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string | undefined
 
         if (!email || !password) {
+          console.log("[Auth] Missing email or password")
           return null
         }
 
@@ -62,15 +63,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             "@/lib/repositories/admin-user-repository"
           )
 
-          // Verify password using bcrypt
+          // Verify password using bcrypt (or mock mode)
           const isValid = await adminUserRepository.verifyPassword(email, password)
+          console.log(`[Auth] Password verification for ${email}: ${isValid}`)
           if (!isValid) {
+            console.log(`[Auth] Password verification failed for ${email}`)
             return null
           }
 
           // Get user details
           const adminUser = await adminUserRepository.findByEmail(email)
+          console.log(`[Auth] Found user:`, adminUser ? { id: adminUser.id, email: adminUser.email, active: adminUser.active } : "null")
           if (!adminUser) {
+            console.log(`[Auth] User not found: ${email}`)
             return null
           }
 
@@ -81,17 +86,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             (typeof adminUser.active === "string" &&
               adminUser.active.toLowerCase() === "true")
 
+          console.log(`[Auth] User active status: ${isActive}`)
           if (!isActive) {
+            console.log(`[Auth] User is not active: ${email}`)
             return null
           }
 
-          return {
+          const userData = {
             id: adminUser.id,
             name: adminUser.name || adminUser.email,
             email: adminUser.email,
             tenantId: adminUser.tenantId,
             adminRole: adminUser.role,
           }
+          console.log(`[Auth] Returning user data:`, { id: userData.id, email: userData.email, role: userData.adminRole })
+          return userData
         } catch (error) {
           console.error("Admin authentication error:", error)
           return null
