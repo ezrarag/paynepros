@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { intakeSteps, IntakeStepField } from "@/lib/intake/steps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,17 +61,6 @@ export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initi
   const currentStep = intakeSteps[stepIndex]
   const isLastStep = stepIndex === intakeSteps.length - 1
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading...</CardTitle>
-          <CardDescription>Validating intake link</CardDescription>
-        </CardHeader>
-      </Card>
-    )
-  }
-
   const handleInputChange = (fieldId: string, value: any) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }))
   }
@@ -106,10 +95,18 @@ export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initi
     }
   }
 
-  const progressLabel = useMemo(
-    () => `Step ${stepIndex + 1} of ${intakeSteps.length}`,
-    [stepIndex]
-  )
+  const progressLabel = `Step ${stepIndex + 1} of ${intakeSteps.length}`
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading...</CardTitle>
+          <CardDescription>Validating intake link</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
 
   if (error) {
     return (
