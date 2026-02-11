@@ -553,9 +553,12 @@ export function ClientWorkspaceDetails({
                 <CardTitle>Latest intake</CardTitle>
                 <CardDescription>
                   Submitted{" "}
-                  {new Date(latestIntake.submittedAt).toLocaleDateString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
+                  {new Date(latestIntake.submittedAt).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
                   })}
                 </CardDescription>
               </CardHeader>
