@@ -81,21 +81,22 @@ export async function POST(
   // new_client: validate required fields, create workspace, then response and timeline
   const fullName = typeof responses.fullName === "string" ? responses.fullName.trim() : ""
   const email = typeof responses.email === "string" ? responses.email.trim() : ""
-  const consentSignature = Boolean(responses.consentSignature)
+  const address = typeof responses.address === "string" ? responses.address.trim() : ""
+  const phone = typeof responses.phone === "string" ? responses.phone.trim() : ""
   if (!fullName) {
     return NextResponse.json({ error: "Full name is required" }, { status: 400 })
+  }
+  if (!address) {
+    return NextResponse.json({ error: "Address is required" }, { status: 400 })
   }
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 })
   }
-  if (!consentSignature) {
-    return NextResponse.json({ error: "You must authorize PaynePros to prepare your tax filing" }, { status: 400 })
+  if (!phone) {
+    return NextResponse.json({ error: "Phone number is required" }, { status: 400 })
   }
 
   const taxYears = parseTaxYears(responses.taxYears)
-  const incomeTypes = Array.isArray(responses.incomeTypes) ? responses.incomeTypes : []
-  const expenseCategories = Array.isArray(responses.expenseCategories) ? responses.expenseCategories : []
-  const tags = [...new Set([...incomeTypes, ...expenseCategories])].filter((t) => typeof t === "string").slice(0, 10)
   const now = new Date().toISOString()
 
   const workspace = await clientWorkspaceRepository.create({
@@ -104,10 +105,10 @@ export async function POST(
     primaryContact: {
       name: fullName,
       email,
-      phone: typeof responses.phone === "string" ? responses.phone.trim() || undefined : undefined,
+      phone,
     },
     taxYears: taxYears.length > 0 ? taxYears : [new Date().getFullYear()],
-    tags,
+    tags: [],
     taxReturnChecklist: checklistDefaults,
     lastActivityAt: now,
   })

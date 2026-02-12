@@ -20,68 +20,36 @@ export const intakeSteps: IntakeStep[] = [
   {
     id: "contact",
     title: "Contact Info",
-    description: "Confirm the best way to reach you.",
+    description: "Share your basic contact details.",
     fields: [
-      { id: "fullName", label: "Full name", type: "text", required: true },
+      { id: "fullName", label: "Name", type: "text", required: true },
+      { id: "address", label: "Address", type: "text", required: true },
       { id: "email", label: "Email address", type: "email", required: true },
-      { id: "phone", label: "Phone number", type: "tel" },
-      { id: "preferredChannel", label: "Preferred channel", type: "select", options: ["Email", "SMS", "WhatsApp"] },
+      { id: "phone", label: "Phone number", type: "tel", required: true },
     ],
   },
   {
     id: "tax_year",
-    title: "Tax Year",
-    description: "Select the tax years you want help with.",
+    title: "Year",
+    description: "Tell us which tax year this intake is for.",
     fields: [
       {
         id: "taxYears",
-        label: "Tax year(s)",
-        type: "multiselect",
-        options: ["2022", "2023", "2024"],
+        label: "Year",
+        type: "select",
+        options: ["2023", "2024", "2025", "2026"],
         required: true,
-      },
-    ],
-  },
-  {
-    id: "income",
-    title: "Income Types",
-    description: "Let us know which income sources apply.",
-    fields: [
-      {
-        id: "incomeTypes",
-        label: "Income sources",
-        type: "multiselect",
-        options: ["W-2", "1099", "Self-employed", "Rental", "Investments", "Other"],
-      },
-    ],
-  },
-  {
-    id: "expenses",
-    title: "Expense Categories",
-    description: "Pick any expense categories you want us to review.",
-    fields: [
-      {
-        id: "expenseCategories",
-        label: "Expense categories",
-        type: "multiselect",
-        options: ["Mileage", "Supplies", "Travel", "Home office", "Meals", "Other"],
       },
     ],
   },
   {
     id: "consent",
-    title: "Consent & Authorization",
-    description: "Confirm that we can work on your filing.",
+    title: "Anything Else",
+    description: "Share anything else you'd like us to know.",
     fields: [
       {
-        id: "consentSignature",
-        label: "I authorize PaynePros to prepare my tax filing.",
-        type: "checkbox",
-        required: true,
-      },
-      {
         id: "notes",
-        label: "Anything else we should know?",
+        label: "Anything else?",
         type: "textarea",
         placeholder: "Add any extra details or questions here.",
       },

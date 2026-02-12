@@ -1,5 +1,5 @@
 export type IntakeChannel = "sms" | "email" | "whatsapp"
-export type IntakeStepId = "contact" | "tax_year" | "income" | "expenses" | "consent"
+export type IntakeStepId = "contact" | "tax_year" | "consent"
 export type DocumentCategory = "income" | "expenses" | "mileage" | "banking" | "other"
 export type TimelineEventType =
   | "message"
