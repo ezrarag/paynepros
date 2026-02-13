@@ -85,6 +85,24 @@ export function ClientQueue({ items }: ClientQueueProps) {
                       </div>
                     )}
                   </div>
+                  <div className="shrink-0 rounded-md border px-2 py-1 text-right bg-background">
+                    <div className="flex items-end justify-end gap-1">
+                      <span className="text-3xl sm:text-4xl font-black leading-none">{item.checklistPercentComplete}</span>
+                      <span className="text-xl sm:text-2xl font-black leading-none text-muted-foreground">%</span>
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">
+                      {item.checklistRemainingCount > 0
+                        ? `${item.checklistRemainingCount} remaining`
+                        : "Complete"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] sm:text-xs text-muted-foreground rounded border border-dashed p-2">
+                  <span className="font-medium">Missing:</span>{" "}
+                  {item.checklistMissingLabels.length > 0
+                    ? item.checklistMissingLabels.join(", ")
+                    : "None"}
                 </div>
 
                 {nextTasks.length > 0 ? (

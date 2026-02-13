@@ -52,4 +52,7 @@ export interface ClientQueueItem extends CommandCenterWorkspace {
   messageSummaries: MessageSummary[]
   documentRequest?: DocumentRequest
   statusLabel: string
+  checklistPercentComplete: number
+  checklistRemainingCount: number
+  checklistMissingLabels: string[]
 }

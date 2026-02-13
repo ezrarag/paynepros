@@ -1,5 +1,5 @@
 import { ClientWorkspaceList } from "@/components/admin/ClientWorkspaceList"
-import { bulkGenerateIntakeLinks, bulkUpdate, createClient } from "./actions"
+import { bulkGenerateIntakeLinks, bulkUpdate, createClient, updateClientChecklistStatus } from "./actions"
 
 export default async function ClientsPage() {
   const { clientWorkspaceRepository } = await import("@/lib/repositories/client-workspace-repository")
@@ -11,6 +11,7 @@ export default async function ClientsPage() {
       createClient={createClient}
       bulkUpdate={bulkUpdate}
       bulkGenerateIntakeLinks={bulkGenerateIntakeLinks}
+      updateClientChecklistStatus={updateClientChecklistStatus}
     />
   )
 }

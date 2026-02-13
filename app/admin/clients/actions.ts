@@ -1,10 +1,19 @@
 "use server"
 
 import { createHash } from "crypto"
+import { revalidatePath } from "next/cache"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
-import { checklistDefaults } from "@/lib/tax-return-checklist"
+import {
+  checklistDefaults,
+  checklistItems,
+  checklistStatusLabels,
+  isChecklistStatus,
+  normalizeChecklist,
+} from "@/lib/tax-return-checklist"
 import { createIntakeLinkToken } from "@/lib/intake/link-token"
+import type { ChecklistKey } from "@/lib/tax-return-checklist"
+import type { TaxReturnChecklist } from "@/lib/types/client-workspace"
 
 export type ActionResult<T = void> = 
   | { success: true; data: T }
@@ -123,5 +132,61 @@ export async function bulkGenerateIntakeLinks(
   } catch (error) {
     console.error("Failed to generate intake links:", error)
     return { success: false, error: "Failed to generate intake links. Please try again." }
+  }
+}
+
+export async function updateClientChecklistStatus(input: {
+  workspaceId: string
+  itemKey: ChecklistKey
+  status: "not_started" | "in_progress" | "complete"
+}): Promise<ActionResult> {
+  try {
+    if (!input.workspaceId || !isChecklistStatus(input.status)) {
+      return { success: false, error: "Invalid input" }
+    }
+
+    const allowedKeys = checklistItems.map((item) => item.key)
+    if (!allowedKeys.includes(input.itemKey)) {
+      return { success: false, error: "Invalid checklist item" }
+    }
+
+    const workspace = await clientWorkspaceRepository.findById(input.workspaceId)
+    if (!workspace) {
+      return { success: false, error: "Client not found" }
+    }
+
+    const currentChecklist = normalizeChecklist(workspace.taxReturnChecklist)
+    const currentStatus = currentChecklist[input.itemKey]
+    if (currentStatus === input.status) {
+      return { success: true, data: undefined }
+    }
+
+    const updatedChecklist = {
+      ...currentChecklist,
+      [input.itemKey]: input.status,
+    } as TaxReturnChecklist
+
+    await clientWorkspaceRepository.update(input.workspaceId, {
+      taxReturnChecklist: updatedChecklist,
+      lastActivityAt: new Date().toISOString(),
+    })
+
+    const itemLabel =
+      checklistItems.find((item) => item.key === input.itemKey)?.label ?? "Checklist item"
+    await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
+      type: "tax_return",
+      title: "Return checklist updated",
+      description: `${itemLabel} moved from ${checklistStatusLabels[currentStatus]} to ${
+        checklistStatusLabels[input.status]
+      }.`,
+    })
+
+    revalidatePath("/admin/clients")
+    revalidatePath(`/admin/clients/${input.workspaceId}`)
+    revalidatePath("/admin")
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to update checklist status:", error)
+    return { success: false, error: "Failed to update checklist. Please try again." }
   }
 }

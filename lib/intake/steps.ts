@@ -37,7 +37,7 @@ export const intakeSteps: IntakeStep[] = [
         id: "taxYears",
         label: "Year",
         type: "select",
-        options: ["2023", "2024", "2025", "2026"],
+        options: ["2020","2021","2022", "2023", "2024", "2025"],
         required: true,
       },
     ],

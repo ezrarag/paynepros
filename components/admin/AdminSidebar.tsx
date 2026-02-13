@@ -43,7 +43,6 @@ import {
 } from "@/components/ui/select"
 
 const payneProsItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/clients", label: "Clients", icon: Users },
   { href: "/admin/messaging", label: "Messaging", icon: MessageSquare },
   { href: "/admin/integrations", label: "Integrations", icon: Plug },
@@ -51,6 +50,13 @@ const payneProsItems = [
   { href: "/admin/forms", label: "Forms", icon: ClipboardList },
   { href: "/admin/calculations", label: "Calculations", icon: Calculator },
 ]
+
+const dashboardSubItems = [
+  { href: "/admin", label: "Queue Overview" },
+  { href: "/admin/dashboard/focus", label: "Today Focus" },
+  { href: "/admin/dashboard/activity", label: "Activity Feed" },
+  { href: "/admin/dashboard/inbox", label: "Inbox" },
+] as const
 
 const subscriptionItems = [
   { href: "/admin/wallet", label: "Wallet", icon: Wallet },
@@ -233,6 +239,25 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
     return linkContent
   }
 
+  const renderDashboardSubLink = (item: (typeof dashboardSubItems)[number]) => {
+    const isActive = pathname === item.href
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center rounded-lg px-4 py-1.5 text-xs transition-colors",
+          isActive
+            ? "bg-primary/10 text-primary font-semibold"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        {item.label}
+      </Link>
+    )
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <aside
@@ -286,6 +311,14 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
                 PaynePros
               </p>
             )}
+            <div className="space-y-1">
+              {renderLink({ href: "/admin", label: "Dashboard", icon: LayoutDashboard })}
+              {!isCollapsed && (
+                <div className="ml-8 space-y-1 border-l pl-3">
+                  {dashboardSubItems.map(renderDashboardSubLink)}
+                </div>
+              )}
+            </div>
             <div className="space-y-1">{payneProsItems.map(renderLink)}</div>
           </div>
 
@@ -456,4 +489,3 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
     </TooltipProvider>
   )
 }
-

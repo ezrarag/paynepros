@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ClientWorkspace } from "@/lib/types/client-workspace"
+import { checklistItems, normalizeChecklist } from "@/lib/tax-return-checklist"
+import type { ChecklistKey } from "@/lib/tax-return-checklist"
+import type { ClientWorkspace, TaxReturnChecklistStatus } from "@/lib/types/client-workspace"
 
 const TAG_OPTIONS = ["tax", "bookkeeping", "payroll", "cleanup"] as const
 const TAX_YEAR_OPTIONS = [2022, 2023, 2024, 2025, 2026] as const
@@ -43,11 +45,27 @@ type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string }
 
+type ChecklistSummary = {
+  completeCount: number
+  totalCount: number
+  remainingCount: number
+  percentComplete: number
+  missingLabels: string[]
+}
+
 interface ClientWorkspaceListProps {
   workspaces: ClientWorkspace[]
   createClient: (input: CreateClientInput) => Promise<ActionResult<{ id: string }>>
   bulkUpdate: (input: BulkUpdateInput) => Promise<ActionResult>
-  bulkGenerateIntakeLinks: (workspaceIds: string[]) => Promise<ActionResult<BulkIntakeLinkResult[]>>
+  bulkGenerateIntakeLinks: (
+    workspaceIds: string[],
+    baseUrl?: string
+  ) => Promise<ActionResult<BulkIntakeLinkResult[]>>
+  updateClientChecklistStatus: (input: {
+    workspaceId: string
+    itemKey: ChecklistKey
+    status: TaxReturnChecklistStatus
+  }) => Promise<ActionResult>
 }
 
 export function ClientWorkspaceList({
@@ -55,6 +73,7 @@ export function ClientWorkspaceList({
   createClient,
   bulkUpdate,
   bulkGenerateIntakeLinks,
+  updateClientChecklistStatus,
 }: ClientWorkspaceListProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
@@ -66,7 +85,7 @@ export function ClientWorkspaceList({
   const [bulkTagAction, setBulkTagAction] = useState<"add_tag" | "remove_tag">(
     "add_tag"
   )
-  const [bulkTagValue, setBulkTagValue] = useState(TAG_OPTIONS[0])
+  const [bulkTagValue, setBulkTagValue] = useState<(typeof TAG_OPTIONS)[number]>(TAG_OPTIONS[0])
   const [bulkStatusValue, setBulkStatusValue] = useState<"active" | "inactive">("active")
   const [generatedLinks, setGeneratedLinks] = useState<BulkIntakeLinkResult[]>([])
   const [isPending, startTransition] = useTransition()
@@ -76,29 +95,77 @@ export function ClientWorkspaceList({
   const [newClientPhone, setNewClientPhone] = useState("")
   const [newClientTags, setNewClientTags] = useState<string[]>([])
   const [newClientTaxYears, setNewClientTaxYears] = useState<number[]>([])
+  const [checklistOverrides, setChecklistOverrides] = useState<
+    Record<string, Record<ChecklistKey, TaxReturnChecklistStatus>>
+  >({})
+
+  const getChecklistForWorkspace = (workspace: ClientWorkspace) => {
+    const fallbackChecklist = normalizeChecklist(workspace.taxReturnChecklist)
+    const overrideChecklist = checklistOverrides[workspace.id]
+    if (!overrideChecklist) {
+      return fallbackChecklist
+    }
+    return {
+      ...fallbackChecklist,
+      ...overrideChecklist,
+    }
+  }
+
+  const getChecklistSummary = (workspace: ClientWorkspace): ChecklistSummary => {
+    const checklist = getChecklistForWorkspace(workspace)
+    const totalCount = checklistItems.length
+    const completeCount = checklistItems.filter((item) => checklist[item.key] === "complete").length
+    const remainingCount = totalCount - completeCount
+    const percentComplete = Math.round((completeCount / totalCount) * 100)
+    const missingLabels = checklistItems
+      .filter((item) => checklist[item.key] !== "complete")
+      .map((item) => item.label)
+
+    return {
+      completeCount,
+      totalCount,
+      remainingCount,
+      percentComplete,
+      missingLabels,
+    }
+  }
 
   const filteredWorkspaces = useMemo(() => {
     const lowered = searchTerm.trim().toLowerCase()
-    return workspaces.filter((workspace) => {
-      const matchesSearch = lowered.length
-        ? [
-            workspace.displayName,
-            workspace.primaryContact?.email,
-            workspace.primaryContact?.phone,
-          ]
-            .filter(Boolean)
-            .some((value) => value?.toLowerCase().includes(lowered))
-        : true
-      const matchesTag = tagFilter === "all" ? true : workspace.tags.includes(tagFilter)
-      const matchesStatus =
-        statusFilter === "all" ? true : workspace.status === statusFilter
-      const matchesTaxYear =
-        taxYearFilter === "all"
-          ? true
-          : workspace.taxYears.includes(Number(taxYearFilter))
-      return matchesSearch && matchesTag && matchesStatus && matchesTaxYear
-    })
-  }, [searchTerm, statusFilter, tagFilter, taxYearFilter, workspaces])
+    return workspaces
+      .filter((workspace) => {
+        const matchesSearch = lowered.length
+          ? [
+              workspace.displayName,
+              workspace.primaryContact?.email,
+              workspace.primaryContact?.phone,
+            ]
+              .filter(Boolean)
+              .some((value) => value?.toLowerCase().includes(lowered))
+          : true
+        const matchesTag = tagFilter === "all" ? true : workspace.tags.includes(tagFilter)
+        const matchesStatus =
+          statusFilter === "all" ? true : workspace.status === statusFilter
+        const matchesTaxYear =
+          taxYearFilter === "all"
+            ? true
+            : workspace.taxYears.includes(Number(taxYearFilter))
+        return matchesSearch && matchesTag && matchesStatus && matchesTaxYear
+      })
+      .sort((a, b) => {
+        const aSummary = getChecklistSummary(a)
+        const bSummary = getChecklistSummary(b)
+        if (aSummary.remainingCount !== bSummary.remainingCount) {
+          return bSummary.remainingCount - aSummary.remainingCount
+        }
+        if (aSummary.percentComplete !== bSummary.percentComplete) {
+          return aSummary.percentComplete - bSummary.percentComplete
+        }
+        const aTime = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0
+        const bTime = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0
+        return bTime - aTime
+      })
+  }, [searchTerm, statusFilter, tagFilter, taxYearFilter, workspaces, checklistOverrides])
 
   const allSelected =
     filteredWorkspaces.length > 0 &&
@@ -199,6 +266,48 @@ export function ClientWorkspaceList({
         return
       }
       setGeneratedLinks(result.data)
+    })
+  }
+
+  const toggleChecklistComplete = (
+    workspace: ClientWorkspace,
+    itemKey: ChecklistKey,
+    checked: boolean
+  ) => {
+    const nextStatus: TaxReturnChecklistStatus = checked ? "complete" : "not_started"
+    const currentChecklist = getChecklistForWorkspace(workspace)
+    const previousStatus = currentChecklist[itemKey]
+    if (previousStatus === nextStatus) {
+      return
+    }
+
+    setError(null)
+    setChecklistOverrides((prev) => ({
+      ...prev,
+      [workspace.id]: {
+        ...currentChecklist,
+        [itemKey]: nextStatus,
+      },
+    }))
+
+    startTransition(async () => {
+      const result = await updateClientChecklistStatus({
+        workspaceId: workspace.id,
+        itemKey,
+        status: nextStatus,
+      })
+      if (!result.success) {
+        setChecklistOverrides((prev) => ({
+          ...prev,
+          [workspace.id]: {
+            ...currentChecklist,
+            [itemKey]: previousStatus,
+          },
+        }))
+        setError(result.error)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -408,6 +517,41 @@ export function ClientWorkspaceList({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Checklist Progress</CardTitle>
+          <CardDescription>Prioritized by clients with the most remaining checklist items.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Remaining clients</div>
+            <div className="mt-2 text-3xl font-bold">
+              {filteredWorkspaces.filter((workspace) => getChecklistSummary(workspace).remainingCount > 0).length}
+            </div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Fully complete</div>
+            <div className="mt-2 text-3xl font-bold">
+              {filteredWorkspaces.filter((workspace) => getChecklistSummary(workspace).remainingCount === 0).length}
+            </div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Avg. completion</div>
+            <div className="mt-2 text-3xl font-bold">
+              {filteredWorkspaces.length > 0
+                ? Math.round(
+                    filteredWorkspaces.reduce(
+                      (sum, workspace) => sum + getChecklistSummary(workspace).percentComplete,
+                      0
+                    ) / filteredWorkspaces.length
+                  )
+                : 0}
+              %
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4">
         {filteredWorkspaces.length === 0 ? (
           <Card>
@@ -416,7 +560,10 @@ export function ClientWorkspaceList({
             </CardContent>
           </Card>
         ) : (
-          filteredWorkspaces.map((workspace) => (
+          filteredWorkspaces.map((workspace) => {
+            const summary = getChecklistSummary(workspace)
+            const checklist = getChecklistForWorkspace(workspace)
+            return (
             <Card key={workspace.id}>
               <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-3">
@@ -441,9 +588,62 @@ export function ClientWorkspaceList({
                   <CreateIntakeLinkButton workspaceId={workspace.id} />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-lg border p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Percent complete</div>
+                    <div className="mt-2 flex items-end gap-1">
+                      <span className="text-6xl font-black leading-none">
+                        {summary.percentComplete}
+                      </span>
+                      <span className="text-4xl font-black leading-none text-muted-foreground">%</span>
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {summary.completeCount} of {summary.totalCount} complete
+                    </div>
+                    <div className="text-sm font-medium">
+                      {summary.remainingCount > 0
+                        ? `${summary.remainingCount} remaining`
+                        : "All checklist items complete"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border p-4 lg:col-span-2">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Checklist quick checkoff</div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {checklistItems.map((item) => {
+                        const status = checklist[item.key]
+                        return (
+                          <label
+                            key={`${workspace.id}-${item.key}`}
+                            className="flex items-center gap-2 rounded border px-3 py-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={status === "complete"}
+                              onChange={(event) =>
+                                toggleChecklistComplete(workspace, item.key, event.target.checked)
+                              }
+                              className="h-4 w-4 rounded border-muted"
+                            />
+                            <span className={status === "complete" ? "line-through text-muted-foreground" : ""}>
+                              {item.label}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="text-sm text-muted-foreground">
                   Tax years: {workspace.taxYears.join(", ") || "Not selected"}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Missing:{" "}
+                  {summary.missingLabels.length > 0
+                    ? summary.missingLabels.join(", ")
+                    : "None"}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {workspace.tags.map((tag) => (
@@ -454,7 +654,7 @@ export function ClientWorkspaceList({
                 </div>
               </CardContent>
             </Card>
-          ))
+          )})
         )}
       </div>
 
