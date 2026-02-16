@@ -221,6 +221,40 @@ export function ClientWorkspaceDetails({
   const [mailState, setMailState] = useState("")
   const [mailZip, setMailZip] = useState("")
   const [mailNote, setMailNote] = useState("")
+  const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
+    documentsComplete: {
+      container: "bg-slate-100/90 border-slate-200",
+      action: "border-sky-300 text-sky-700",
+    },
+    expensesCategorized: {
+      container: "bg-emerald-100/80 border-emerald-200",
+      action: "border-emerald-300 text-emerald-700",
+    },
+    readyForTaxHawk: {
+      container: "bg-blue-100/80 border-blue-200",
+      action: "border-blue-300 text-blue-700",
+    },
+    incomeReviewed: {
+      container: "bg-violet-100/80 border-violet-200",
+      action: "border-violet-300 text-violet-700",
+    },
+    bankInfoCollected: {
+      container: "bg-amber-100/80 border-amber-200",
+      action: "border-amber-300 text-amber-700",
+    },
+    otherCompleted: {
+      container: "bg-cyan-100/80 border-cyan-200",
+      action: "border-cyan-300 text-cyan-700",
+    },
+    filed: {
+      container: "bg-indigo-100/80 border-indigo-200",
+      action: "border-indigo-300 text-indigo-700",
+    },
+    accepted: {
+      container: "bg-teal-100/80 border-teal-200",
+      action: "border-teal-300 text-teal-700",
+    },
+  }
 
   // Calculations state
   const [isSavingCalc, startSaveCalc] = useTransition()
@@ -277,8 +311,8 @@ export function ClientWorkspaceDetails({
     setItems([...items, value])
   }
 
-  const toggleChecklistComplete = (itemKey: ChecklistKey, checked: boolean) => {
-    const nextStatus: "not_started" | "complete" = checked ? "complete" : "not_started"
+  const completeChecklistItem = (itemKey: ChecklistKey) => {
+    const nextStatus: "complete" = "complete"
     const previousStatus = checklist[itemKey]
     if (previousStatus === nextStatus) {
       return
@@ -920,25 +954,33 @@ export function ClientWorkspaceDetails({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {checklistItems.map((item) => {
-                const status = checklist[item.key]
-                return (
-                  <label
-                    key={item.key}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={status === "complete"}
-                      onChange={(event) => toggleChecklistComplete(item.key, event.target.checked)}
-                      className="h-4 w-4 rounded border-muted"
-                    />
-                    <span className={status === "complete" ? "text-muted-foreground line-through" : ""}>
-                      {item.label}
-                    </span>
-                  </label>
-                )
-              })}
+              {checklistItems.filter((item) => checklist[item.key] !== "complete").length === 0 ? (
+                <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                  All checklist items completed.
+                </div>
+              ) : (
+                checklistItems
+                  .filter((item) => checklist[item.key] !== "complete")
+                  .map((item) => {
+                    const rowStyle = checklistRowStyles[item.key]
+                    return (
+                      <div
+                        key={item.key}
+                        className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
+                      >
+                        <span className="font-medium">{item.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => completeChecklistItem(item.key)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
+                          aria-label={`Complete ${item.label}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )
+                  })
+              )}
             </CardContent>
           </Card>
         </TabsContent>

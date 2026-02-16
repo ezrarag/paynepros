@@ -2,18 +2,22 @@ import type { TaxReturnChecklist, TaxReturnChecklistStatus } from "@/lib/types/c
 
 export const checklistDefaults: TaxReturnChecklist = {
   documentsComplete: "not_started",
-  incomeReviewed: "not_started",
   expensesCategorized: "not_started",
   readyForTaxHawk: "not_started",
+  incomeReviewed: "not_started",
+  bankInfoCollected: "not_started",
+  otherCompleted: "not_started",
   filed: "not_started",
   accepted: "not_started",
 }
 
 export const checklistItems = [
-  { key: "documentsComplete", label: "Documents Received" },
-  { key: "incomeReviewed", label: "Income Verified" },
-  { key: "expensesCategorized", label: "Expenses Organized" },
-  { key: "readyForTaxHawk", label: "Return Entered" },
+  { key: "documentsComplete", label: "Documents" },
+  { key: "expensesCategorized", label: "Expenses" },
+  { key: "readyForTaxHawk", label: "Entered" },
+  { key: "incomeReviewed", label: "Identification" },
+  { key: "bankInfoCollected", label: "Bank Info" },
+  { key: "otherCompleted", label: "Other" },
   { key: "filed", label: "Filed" },
   { key: "accepted", label: "Accepted" },
 ] as const

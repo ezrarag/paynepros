@@ -60,6 +60,60 @@ export async function deleteClient(workspaceId: string): Promise<ActionResult> {
   }
 }
 
+export async function completeClientWorkspace(workspaceId: string): Promise<ActionResult> {
+  try {
+    const workspace = await clientWorkspaceRepository.findById(workspaceId)
+    if (!workspace) {
+      return { success: false, error: "Client not found" }
+    }
+
+    await clientWorkspaceRepository.update(workspaceId, {
+      status: "inactive",
+      lastActivityAt: new Date().toISOString(),
+    })
+
+    await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+      type: "task",
+      title: "Client marked complete",
+      description: "Client moved to completed/archive list.",
+    })
+
+    revalidatePath("/admin/clients")
+    revalidatePath("/admin")
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to complete client workspace:", error)
+    return { success: false, error: "Failed to complete client. Please try again." }
+  }
+}
+
+export async function restoreClientWorkspace(workspaceId: string): Promise<ActionResult> {
+  try {
+    const workspace = await clientWorkspaceRepository.findById(workspaceId)
+    if (!workspace) {
+      return { success: false, error: "Client not found" }
+    }
+
+    await clientWorkspaceRepository.update(workspaceId, {
+      status: "active",
+      lastActivityAt: new Date().toISOString(),
+    })
+
+    await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+      type: "task",
+      title: "Client restored",
+      description: "Client moved from completed/archive to active workspaces.",
+    })
+
+    revalidatePath("/admin/clients")
+    revalidatePath("/admin")
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to restore client workspace:", error)
+    return { success: false, error: "Failed to restore client. Please try again." }
+  }
+}
+
 export async function bulkUpdate(input: {
   workspaceIds: string[]
   action: "add_tag" | "remove_tag" | "set_status"

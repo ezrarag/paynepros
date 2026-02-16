@@ -1,49 +1,11 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ClientQueue } from "@/components/admin/command-center/ClientQueue"
 import { getCurrentUser } from "@/lib/auth"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
-import type { ClientWorkspace } from "@/lib/types/client-workspace"
-import type { ClientQueueItem } from "@/lib/types/command-center"
 import { checklistItems, normalizeChecklist } from "@/lib/tax-return-checklist"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { QuickActions } from "@/components/admin/QuickActions"
-
-function transformWorkspaceToQueueItem(workspace: ClientWorkspace): ClientQueueItem {
-  const checklist = normalizeChecklist(workspace.taxReturnChecklist)
-  const totalChecklistItems = checklistItems.length
-  const completeChecklistItems = checklistItems.filter((item) => checklist[item.key] === "complete").length
-  const checklistPercentComplete = Math.round((completeChecklistItems / totalChecklistItems) * 100)
-  const checklistRemainingCount = totalChecklistItems - completeChecklistItems
-  const checklistMissingLabels = checklistItems
-    .filter((item) => checklist[item.key] !== "complete")
-    .map((item) => item.label)
-  
-  // Determine status label based on checklist
-  let statusLabel = "In progress"
-  if (checklist.documentsComplete === "complete" && checklist.incomeReviewed === "complete") {
-    statusLabel = "Ready to file"
-  } else if (checklist.documentsComplete !== "complete") {
-    statusLabel = "Missing documents"
-  } else if (checklist.documentsComplete === "complete" && checklist.incomeReviewed === "not_started") {
-    statusLabel = "Needs review"
-  }
-
-  return {
-    id: workspace.id,
-    clientName: workspace.displayName,
-    status: workspace.status,
-    tags: workspace.tags,
-    lastActivityAt: workspace.lastActivityAt || workspace.updatedAt,
-    tasks: [], // Tasks not wired yet
-    messageSummaries: [], // Messages handled separately
-    statusLabel,
-    checklistPercentComplete,
-    checklistRemainingCount,
-    checklistMissingLabels,
-  }
-}
 
 export default async function AdminDashboard() {
   const user = await getCurrentUser()
@@ -55,22 +17,6 @@ export default async function AdminDashboard() {
   const workspaces = await clientWorkspaceRepository.findAll(50)
   const activeWorkspaces = workspaces.filter((w) => w.status === "active")
 
-  // Transform workspaces to queue items
-  const clientQueue: ClientQueueItem[] = activeWorkspaces
-    .map(transformWorkspaceToQueueItem)
-    .sort((a, b) => {
-      if (a.checklistRemainingCount !== b.checklistRemainingCount) {
-        return b.checklistRemainingCount - a.checklistRemainingCount
-      }
-      if (a.checklistPercentComplete !== b.checklistPercentComplete) {
-        return a.checklistPercentComplete - b.checklistPercentComplete
-      }
-      // Then by last activity (most recent first)
-      const aTime = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0
-      const bTime = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0
-      return bTime - aTime
-    })
-
   const totalChecklistItems = activeWorkspaces.length * checklistItems.length
   const completeChecklistItems = activeWorkspaces.reduce((sum, workspace) => {
     const checklist = normalizeChecklist(workspace.taxReturnChecklist)
@@ -78,7 +24,10 @@ export default async function AdminDashboard() {
   }, 0)
   const overallPercentComplete =
     totalChecklistItems > 0 ? Math.round((completeChecklistItems / totalChecklistItems) * 100) : 0
-  const clientsRemaining = clientQueue.filter((item) => item.checklistRemainingCount > 0).length
+  const clientsRemaining = activeWorkspaces.filter((workspace) => {
+    const checklist = normalizeChecklist(workspace.taxReturnChecklist)
+    return checklistItems.some((item) => checklist[item.key] !== "complete")
+  }).length
 
   const today = new Date()
   const formattedDate = today.toLocaleDateString("en-US", {
@@ -128,20 +77,9 @@ export default async function AdminDashboard() {
             <Button asChild>
               <Link href="/admin/clients">Open Client Checklists</Link>
             </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/dashboard/activity">Open Activity Feed</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/dashboard/inbox">Open Inbox</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/admin/dashboard/focus">Open Today Focus</Link>
-            </Button>
           </div>
         </CardContent>
       </Card>
-
-      <ClientQueue items={clientQueue} />
 
       <Card>
         <CardHeader className="p-4 sm:p-6">

@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Trash2 } from "lucide-react"
 import { CreateIntakeLinkButton } from "@/components/admin/CreateIntakeLinkButton"
 import { NewClientIntakeLinkButton } from "@/components/admin/NewClientIntakeLinkButton"
 import { Button } from "@/components/ui/button"
@@ -52,12 +53,15 @@ type ActionResult<T = void> =
 
 interface ClientWorkspaceListProps {
   workspaces: ClientWorkspace[]
+  listMode: "active" | "completed"
   createClient: (input: CreateClientInput) => Promise<ActionResult<{ id: string }>>
   bulkUpdate: (input: BulkUpdateInput) => Promise<ActionResult>
   bulkGenerateIntakeLinks: (
     workspaceIds: string[],
     baseUrl?: string
   ) => Promise<ActionResult<BulkIntakeLinkResult[]>>
+  completeClientWorkspace: (workspaceId: string) => Promise<ActionResult>
+  restoreClientWorkspace: (workspaceId: string) => Promise<ActionResult>
   updateClientChecklistStatus: (input: {
     workspaceId: string
     itemKey: ChecklistKey
@@ -67,15 +71,17 @@ interface ClientWorkspaceListProps {
 
 export function ClientWorkspaceList({
   workspaces,
+  listMode,
   createClient,
   bulkUpdate,
   bulkGenerateIntakeLinks,
+  completeClientWorkspace,
+  restoreClientWorkspace,
   updateClientChecklistStatus,
 }: ClientWorkspaceListProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [tagFilter, setTagFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
   const [taxYearFilter, setTaxYearFilter] = useState("all")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [newClientOpen, setNewClientOpen] = useState(false)
@@ -92,6 +98,7 @@ export function ClientWorkspaceList({
   const [newClientPhone, setNewClientPhone] = useState("")
   const [newClientTags, setNewClientTags] = useState<string[]>([])
   const [newClientTaxYears, setNewClientTaxYears] = useState<number[]>([])
+  const [archivedWorkspaceIds, setArchivedWorkspaceIds] = useState<string[]>([])
   const [checklistOverrides, setChecklistOverrides] = useState<
     Record<string, Record<ChecklistKey, TaxReturnChecklistStatus>>
   >({})
@@ -116,6 +123,41 @@ export function ClientWorkspaceList({
     Accepted: "bg-emerald-100 text-emerald-800",
   }
 
+  const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
+    documentsComplete: {
+      container: "bg-slate-100/90 border-slate-200",
+      action: "border-sky-300 text-sky-700",
+    },
+    expensesCategorized: {
+      container: "bg-emerald-100/80 border-emerald-200",
+      action: "border-emerald-300 text-emerald-700",
+    },
+    readyForTaxHawk: {
+      container: "bg-blue-100/80 border-blue-200",
+      action: "border-blue-300 text-blue-700",
+    },
+    incomeReviewed: {
+      container: "bg-violet-100/80 border-violet-200",
+      action: "border-violet-300 text-violet-700",
+    },
+    bankInfoCollected: {
+      container: "bg-amber-100/80 border-amber-200",
+      action: "border-amber-300 text-amber-700",
+    },
+    otherCompleted: {
+      container: "bg-cyan-100/80 border-cyan-200",
+      action: "border-cyan-300 text-cyan-700",
+    },
+    filed: {
+      container: "bg-indigo-100/80 border-indigo-200",
+      action: "border-indigo-300 text-indigo-700",
+    },
+    accepted: {
+      container: "bg-teal-100/80 border-teal-200",
+      action: "border-teal-300 text-teal-700",
+    },
+  }
+
   const filteredWorkspaces = useMemo(() => {
     const lowered = searchTerm.trim().toLowerCase()
     return workspaces
@@ -130,37 +172,52 @@ export function ClientWorkspaceList({
               .some((value) => value?.toLowerCase().includes(lowered))
           : true
         const matchesTag = tagFilter === "all" ? true : workspace.tags.includes(tagFilter)
-        const matchesStatus =
-          statusFilter === "all" ? true : workspace.status === statusFilter
         const matchesTaxYear =
           taxYearFilter === "all"
             ? true
             : workspace.taxYears.includes(Number(taxYearFilter))
-        return matchesSearch && matchesTag && matchesStatus && matchesTaxYear
+        return matchesSearch && matchesTag && matchesTaxYear
       })
       .sort((a, b) => {
         const aTime = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0
         const bTime = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0
         return bTime - aTime
       })
-  }, [searchTerm, statusFilter, tagFilter, taxYearFilter, workspaces, checklistOverrides])
+  }, [searchTerm, tagFilter, taxYearFilter, workspaces, checklistOverrides])
+
+  const visibleWorkspaces = filteredWorkspaces.filter(
+    (workspace) => !archivedWorkspaceIds.includes(workspace.id)
+  )
 
   const allSelected =
-    filteredWorkspaces.length > 0 &&
-    filteredWorkspaces.every((workspace) => selectedIds.includes(workspace.id))
-
-  const toggleSelected = (workspaceId: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(workspaceId) ? prev.filter((id) => id !== workspaceId) : [...prev, workspaceId]
-    )
-  }
+    visibleWorkspaces.length > 0 &&
+    visibleWorkspaces.every((workspace) => selectedIds.includes(workspace.id))
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedIds([])
       return
     }
-    setSelectedIds(filteredWorkspaces.map((workspace) => workspace.id))
+    setSelectedIds(visibleWorkspaces.map((workspace) => workspace.id))
+  }
+
+  const completeWorkspaceCard = (workspaceId: string) => {
+    setError(null)
+    setArchivedWorkspaceIds((prev) => (prev.includes(workspaceId) ? prev : [...prev, workspaceId]))
+    setSelectedIds((prev) => prev.filter((id) => id !== workspaceId))
+
+    startTransition(async () => {
+      const result =
+        listMode === "completed"
+          ? await restoreClientWorkspace(workspaceId)
+          : await completeClientWorkspace(workspaceId)
+      if (!result.success) {
+        setArchivedWorkspaceIds((prev) => prev.filter((id) => id !== workspaceId))
+        setError(result.error)
+        return
+      }
+      router.refresh()
+    })
   }
 
   const resetNewClientForm = () => {
@@ -172,6 +229,29 @@ export function ClientWorkspaceList({
   }
 
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const refreshOnFocus = () => router.refresh()
+    const refreshOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh()
+      }
+    }
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        router.refresh()
+      }
+    }, 15000)
+
+    window.addEventListener("focus", refreshOnFocus)
+    document.addEventListener("visibilitychange", refreshOnVisible)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("focus", refreshOnFocus)
+      document.removeEventListener("visibilitychange", refreshOnVisible)
+    }
+  }, [router])
 
   const submitNewClient = () => {
     if (!newClientName.trim()) {
@@ -247,12 +327,8 @@ export function ClientWorkspaceList({
     })
   }
 
-  const toggleChecklistComplete = (
-    workspace: ClientWorkspace,
-    itemKey: ChecklistKey,
-    checked: boolean
-  ) => {
-    const nextStatus: TaxReturnChecklistStatus = checked ? "complete" : "not_started"
+  const completeChecklistItem = (workspace: ClientWorkspace, itemKey: ChecklistKey) => {
+    const nextStatus: TaxReturnChecklistStatus = "complete"
     const currentChecklist = getChecklistForWorkspace(workspace)
     const previousStatus = currentChecklist[itemKey]
     if (previousStatus === nextStatus) {
@@ -311,9 +387,11 @@ export function ClientWorkspaceList({
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Client Workspaces</h1>
-          <p className="text-muted-foreground mt-2">
-            Central source of truth for documents, tasks, messages, and payments.
-          </p>
+          {listMode === "completed" && (
+            <p className="text-muted-foreground mt-2">
+              Central source of truth for documents, tasks, messages, and payments.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => setNewClientOpen(true)}>New Client</Button>
@@ -321,13 +399,13 @@ export function ClientWorkspaceList({
         </div>
       </div>
 
-      <Card>
+      {listMode === "completed" && <Card>
         <CardHeader>
           <CardTitle>Client utilities</CardTitle>
           <CardDescription>Search, filter, and bulk actions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="client-search">Search</Label>
               <Input
@@ -348,22 +426,6 @@ export function ClientWorkspaceList({
                   {TAG_OPTIONS.map((tag) => (
                     <SelectItem key={tag} value={tag}>
                       {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -395,7 +457,7 @@ export function ClientWorkspaceList({
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-muted"
               />
-              Select all ({filteredWorkspaces.length})
+              Select all ({visibleWorkspaces.length})
             </label>
             <span className="text-sm text-muted-foreground">
               {selectedIds.length} selected
@@ -493,29 +555,36 @@ export function ClientWorkspaceList({
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       <div className="grid gap-4">
-        {filteredWorkspaces.length === 0 ? (
+        {visibleWorkspaces.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
-              No client workspaces yet.
+              {listMode === "completed" ? "No completed clients yet." : "No client workspaces yet."}
             </CardContent>
           </Card>
         ) : (
-          filteredWorkspaces.map((workspace) => {
+          visibleWorkspaces.map((workspace) => {
             const checklist = getChecklistForWorkspace(workspace)
             const lifecycleBadge = getLifecycleBadgeLabel(checklist)
+            const pendingItems = checklistItems.filter((item) => checklist[item.key] !== "complete")
             return (
             <Card key={workspace.id}>
               <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(workspace.id)}
-                    onChange={() => toggleSelected(workspace.id)}
-                    className="mt-1 h-4 w-4 rounded border-muted"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => completeWorkspaceCard(workspace.id)}
+                    aria-label={
+                      listMode === "completed"
+                        ? `Restore ${workspace.displayName} to client workspaces`
+                        : `Complete ${workspace.displayName} and move to completed`
+                    }
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300 text-xl leading-none text-emerald-700"
+                  >
+                    {listMode === "completed" ? "+" : <Trash2 className="h-4 w-4" />}
+                  </button>
                   <div>
                     <CardTitle>{workspace.displayName}</CardTitle>
                     <CardDescription>
@@ -541,29 +610,33 @@ export function ClientWorkspaceList({
               <CardContent className="space-y-4">
                 <div className="rounded-lg border p-4">
                   <div className="mb-3 text-sm font-medium">Return Status</div>
-                  <div className="space-y-2">
-                    {checklistItems.map((item) => {
-                      const status = checklist[item.key]
-                      return (
-                        <label
-                          key={`${workspace.id}-${item.key}`}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={status === "complete"}
-                            onChange={(event) =>
-                              toggleChecklistComplete(workspace, item.key, event.target.checked)
-                            }
-                            className="h-4 w-4 rounded border-muted"
-                          />
-                          <span className={status === "complete" ? "text-muted-foreground line-through" : ""}>
-                            {item.label}
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
+                  {pendingItems.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                      All checklist items completed.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {pendingItems.map((item) => {
+                        const rowStyle = checklistRowStyles[item.key]
+                        return (
+                          <div
+                            key={`${workspace.id}-${item.key}`}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
+                          >
+                            <span className="font-medium">{item.label}</span>
+                            <button
+                              type="button"
+                              onClick={() => completeChecklistItem(workspace, item.key)}
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
+                              aria-label={`Complete ${item.label} for ${workspace.displayName}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-sm text-muted-foreground">

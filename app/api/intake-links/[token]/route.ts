@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createHash } from "crypto"
+import { revalidatePath } from "next/cache"
 import { intakeResponseRepository } from "@/lib/repositories/intake-response-repository"
 import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { intakeSteps } from "@/lib/intake/steps"
@@ -61,6 +62,11 @@ export async function POST(
     }
     const workspaceId = payload.workspaceId!
     const tokenHash = createHash("sha256").update(token).digest("hex")
+    // Intake activity should bring an archived client back into active work.
+    await clientWorkspaceRepository.update(workspaceId, {
+      status: "active",
+      lastActivityAt: new Date().toISOString(),
+    })
     const intakeResponse = await intakeResponseRepository.create({
       clientWorkspaceId: workspaceId,
       intakeLinkId: tokenHash,
@@ -75,6 +81,9 @@ export async function POST(
         intakeResponseId: intakeResponse.id,
       },
     })
+    revalidatePath("/admin/clients")
+    revalidatePath("/admin")
+    revalidatePath(`/admin/clients/${workspaceId}`)
     return NextResponse.json({ intakeResponse })
   }
 
@@ -101,7 +110,7 @@ export async function POST(
 
   const workspace = await clientWorkspaceRepository.create({
     displayName: fullName,
-    status: "new",
+    status: "active",
     primaryContact: {
       name: fullName,
       email,
@@ -129,6 +138,9 @@ export async function POST(
       intakeResponseId: intakeResponse.id,
     },
   })
+  revalidatePath("/admin/clients")
+  revalidatePath("/admin")
+  revalidatePath(`/admin/clients/${workspace.id}`)
 
   const intakeLink = await intakeLinkRepository.findByTokenHash(tokenHash)
   if (intakeLink) {

@@ -26,7 +26,7 @@ export function AdminShell({
   headerUser,
 }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   // Listen for sidebar collapse changes via custom event
   useEffect(() => {
@@ -61,22 +61,21 @@ export function AdminShell({
         onMenuClick={() => setSidebarOpen(true)}
       />
       <div className="flex">
-        {/* Mobile overlay */}
+        {/* Sidebar overlay */}
         <button
           type="button"
           aria-label="Close menu"
           onClick={() => setSidebarOpen(false)}
           className={cn(
-            "fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden",
+            "fixed inset-0 z-40 bg-black/50 transition-opacity",
             sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
         />
-        {/* Sidebar: drawer on mobile, static on desktop */}
+        {/* Sidebar drawer (all breakpoints) */}
         <aside
           className={cn(
             "fixed top-14 sm:top-16 left-0 bottom-0 z-50 border-r bg-card",
             "transform transition-transform duration-200 ease-out",
-            "md:relative md:top-0 md:z-0 md:translate-x-0 md:transition-none",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >

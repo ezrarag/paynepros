@@ -14,7 +14,7 @@ interface AdminHeaderProps {
     image?: string | null
     role?: AdminRole
   }
-  /** Mobile: open sidebar (hamburger visible only on small screens) */
+  /** Open sidebar drawer */
   onMenuClick?: () => void
 }
 
@@ -27,7 +27,7 @@ export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
             type="button"
             onClick={onMenuClick}
             aria-label="Open menu"
-            className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0"
+            className="p-2 rounded-lg hover:bg-muted text-foreground shrink-0"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -79,4 +79,3 @@ export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
     </header>
   )
 }
-

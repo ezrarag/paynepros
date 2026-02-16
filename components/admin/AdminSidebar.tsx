@@ -43,13 +43,17 @@ import {
 } from "@/components/ui/select"
 
 const payneProsItems = [
-  { href: "/admin/clients", label: "Clients", icon: Users },
   { href: "/admin/messaging", label: "Messaging", icon: MessageSquare },
   { href: "/admin/integrations", label: "Integrations", icon: Plug },
   { href: "/admin/bookkeeping", label: "Documents", icon: BookOpen },
   { href: "/admin/forms", label: "Forms", icon: ClipboardList },
   { href: "/admin/calculations", label: "Calculations", icon: Calculator },
 ]
+
+const clientSubItems = [
+  { href: "/admin/clients", label: "Client Workspaces", listMode: "active" },
+  { href: "/admin/clients?list=completed", label: "Completed / Archive", listMode: "completed" },
+] as const
 
 const dashboardSubItems = [
   { href: "/admin", label: "Queue Overview" },
@@ -82,9 +86,10 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const lockedModule = searchParams.get("locked")
+  const clientListMode = searchParams.get("list") === "completed" ? "completed" : "active"
   
   // Sidebar collapse state
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   
   // Theme state
   const [theme, setTheme] = useState<Theme>("system")
@@ -92,9 +97,9 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
   // Load sidebar state from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("admin.sidebarCollapsed")
-    if (saved === "true") {
-      setIsCollapsed(true)
-    }
+    const initialCollapsed = saved === null ? true : saved === "true"
+    setIsCollapsed(initialCollapsed)
+    localStorage.setItem("admin.sidebarCollapsed", String(initialCollapsed))
     
     const savedTheme = localStorage.getItem("admin.theme") as Theme | null
     if (savedTheme && ["light", "dark", "system"].includes(savedTheme)) {
@@ -258,6 +263,26 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
     )
   }
 
+  const renderClientSubLink = (item: (typeof clientSubItems)[number]) => {
+    const isClientsPage = pathname === "/admin/clients"
+    const isActive = isClientsPage && clientListMode === item.listMode
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center rounded-lg px-4 py-1.5 text-xs transition-colors",
+          isActive
+            ? "bg-primary/10 text-primary font-semibold"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        {item.label}
+      </Link>
+    )
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <aside
@@ -316,6 +341,14 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
               {!isCollapsed && (
                 <div className="ml-8 space-y-1 border-l pl-3">
                   {dashboardSubItems.map(renderDashboardSubLink)}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1">
+              {renderLink({ href: "/admin/clients", label: "Clients", icon: Users })}
+              {!isCollapsed && (
+                <div className="ml-8 space-y-1 border-l pl-3">
+                  {clientSubItems.map(renderClientSubLink)}
                 </div>
               )}
             </div>

@@ -20,9 +20,11 @@ export type TaxReturnChecklistStatus = "not_started" | "in_progress" | "complete
 
 export interface TaxReturnChecklist {
   documentsComplete: TaxReturnChecklistStatus
-  incomeReviewed: TaxReturnChecklistStatus
   expensesCategorized: TaxReturnChecklistStatus
   readyForTaxHawk: TaxReturnChecklistStatus
+  incomeReviewed: TaxReturnChecklistStatus
+  bankInfoCollected: TaxReturnChecklistStatus
+  otherCompleted: TaxReturnChecklistStatus
   filed: TaxReturnChecklistStatus
   accepted: TaxReturnChecklistStatus
 }
