@@ -5,7 +5,6 @@ import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-r
 import { getMileageRate } from "@/lib/mileage-rates"
 import {
   checklistItems,
-  checklistStatusLabels,
   isChecklistStatus,
   normalizeChecklist,
 } from "@/lib/tax-return-checklist"
@@ -100,9 +99,7 @@ export async function updateChecklistStatus(formData: FormData): Promise<ActionR
     await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
       type: "tax_return",
       title: "Return checklist updated",
-      description: `${itemLabel} moved from ${checklistStatusLabels[currentStatus]} to ${
-        checklistStatusLabels[nextStatus]
-      }.`,
+      description: `${itemLabel} marked ${nextStatus === "complete" ? "complete" : "not complete"}.`,
     })
 
     revalidatePath(`/admin/clients/${workspaceId}`)

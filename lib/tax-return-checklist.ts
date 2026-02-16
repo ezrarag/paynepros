@@ -10,10 +10,10 @@ export const checklistDefaults: TaxReturnChecklist = {
 }
 
 export const checklistItems = [
-  { key: "documentsComplete", label: "Documents complete" },
-  { key: "incomeReviewed", label: "Income reviewed" },
-  { key: "expensesCategorized", label: "Expenses categorized" },
-  { key: "readyForTaxHawk", label: "Ready to enter TaxHawk" },
+  { key: "documentsComplete", label: "Documents Received" },
+  { key: "incomeReviewed", label: "Income Verified" },
+  { key: "expensesCategorized", label: "Expenses Organized" },
+  { key: "readyForTaxHawk", label: "Return Entered" },
   { key: "filed", label: "Filed" },
   { key: "accepted", label: "Accepted" },
 ] as const
@@ -39,3 +39,41 @@ export const normalizeChecklist = (checklist?: TaxReturnChecklist): TaxReturnChe
   ...checklistDefaults,
   ...(checklist ?? {}),
 })
+
+export type LifecycleBadgeLabel =
+  | "Waiting on Documents"
+  | "Reviewing"
+  | "Ready to File"
+  | "Filed"
+  | "Accepted"
+
+export const isChecklistItemComplete = (
+  checklist: TaxReturnChecklist,
+  itemKey: ChecklistKey
+) => checklist[itemKey] === "complete"
+
+export const getLifecycleBadgeLabel = (checklistInput?: TaxReturnChecklist): LifecycleBadgeLabel => {
+  const checklist = normalizeChecklist(checklistInput)
+  const hasAnyComplete = checklistItems.some((item) => isChecklistItemComplete(checklist, item.key))
+  const documentsComplete = isChecklistItemComplete(checklist, "documentsComplete")
+  const returnEntered = isChecklistItemComplete(checklist, "readyForTaxHawk")
+  const filed = isChecklistItemComplete(checklist, "filed")
+  const accepted = isChecklistItemComplete(checklist, "accepted")
+
+  if (accepted) {
+    return "Accepted"
+  }
+  if (filed) {
+    return "Filed"
+  }
+  if (returnEntered && !filed) {
+    return "Ready to File"
+  }
+  if (!hasAnyComplete) {
+    return "Waiting on Documents"
+  }
+  if (documentsComplete) {
+    return "Reviewing"
+  }
+  return "Waiting on Documents"
+}

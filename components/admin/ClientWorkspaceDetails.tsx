@@ -31,10 +31,9 @@ import {
 } from "@/lib/types/client-workspace"
 import {
   checklistItems,
-  checklistStatusLabels,
-  checklistStatusStyles,
   normalizeChecklist,
 } from "@/lib/tax-return-checklist"
+import type { ChecklistKey } from "@/lib/tax-return-checklist"
 
 const TAG_OPTIONS = ["tax", "bookkeeping", "payroll", "cleanup"] as const
 const TAX_YEAR_OPTIONS = [2022, 2023, 2024, 2025, 2026] as const
@@ -143,7 +142,13 @@ export function ClientWorkspaceDetails({
   const [tags, setTags] = useState<string[]>(workspace.tags)
   const [taxYears, setTaxYears] = useState<number[]>(workspace.taxYears)
   const [status, setStatus] = useState<"active" | "inactive">(workspace.status)
-  const checklist = normalizeChecklist(workspace.taxReturnChecklist)
+  const [checklistOverrides, setChecklistOverrides] = useState<
+    Partial<Record<ChecklistKey, "not_started" | "in_progress" | "complete">>
+  >({})
+  const checklist = {
+    ...normalizeChecklist(workspace.taxReturnChecklist),
+    ...checklistOverrides,
+  }
   
   // Mock client forms with send history
   const [clientForms, setClientForms] = useState<ClientForm[]>([
@@ -270,6 +275,38 @@ export function ClientWorkspaceDetails({
       return
     }
     setItems([...items, value])
+  }
+
+  const toggleChecklistComplete = (itemKey: ChecklistKey, checked: boolean) => {
+    const nextStatus: "not_started" | "complete" = checked ? "complete" : "not_started"
+    const previousStatus = checklist[itemKey]
+    if (previousStatus === nextStatus) {
+      return
+    }
+
+    setError(null)
+    setChecklistOverrides((prev) => ({
+      ...prev,
+      [itemKey]: nextStatus,
+    }))
+
+    const formData = new FormData()
+    formData.set("workspaceId", workspace.id)
+    formData.set("itemKey", itemKey)
+    formData.set("status", nextStatus)
+
+    startTransition(async () => {
+      const result = await updateChecklistStatus(formData)
+      if (!result.success) {
+        setChecklistOverrides((prev) => ({
+          ...prev,
+          [itemKey]: previousStatus,
+        }))
+        setError(result.error)
+        return
+      }
+      router.refresh()
+    })
   }
 
   const submitEdit = () => {
@@ -870,50 +907,38 @@ export function ClientWorkspaceDetails({
         <TabsContent value="tax-return" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Return checklist</CardTitle>
-              <CardDescription>Track readiness before TaxHawk entry</CardDescription>
+              <CardTitle>Return Checklist</CardTitle>
+              <CardDescription>
+                Last updated{" "}
+                {new Date(workspace.lastActivityAt ?? workspace.updatedAt).toLocaleString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {checklistItems.map((item) => {
                 const status = checklist[item.key]
                 return (
-                  <div
+                  <label
                     key={item.key}
-                    className="flex flex-col gap-3 rounded-lg border p-3 md:flex-row md:items-center md:justify-between"
+                    className="flex items-center gap-2 text-sm"
                   >
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium">{item.label}</div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${checklistStatusStyles[status]}`}
-                      >
-                        {checklistStatusLabels[status]}
-                      </span>
-                    </div>
-                    <form action={updateChecklistStatus} className="flex items-center gap-2">
-                      <input type="hidden" name="workspaceId" value={workspace.id} />
-                      <input type="hidden" name="itemKey" value={item.key} />
-                      <select
-                        name="status"
-                        defaultValue={status}
-                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                      >
-                        {Object.entries(checklistStatusLabels).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                      <Button variant="outline" size="sm" type="submit">
-                        Update
-                      </Button>
-                    </form>
-                  </div>
+                    <input
+                      type="checkbox"
+                      checked={status === "complete"}
+                      onChange={(event) => toggleChecklistComplete(item.key, event.target.checked)}
+                      className="h-4 w-4 rounded border-muted"
+                    />
+                    <span className={status === "complete" ? "text-muted-foreground line-through" : ""}>
+                      {item.label}
+                    </span>
+                  </label>
                 )
               })}
-
-              <div className="flex items-center justify-end">
-                <Button disabled>Export summary</Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

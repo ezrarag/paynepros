@@ -16,7 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { checklistItems, normalizeChecklist } from "@/lib/tax-return-checklist"
+import {
+  checklistItems,
+  getLifecycleBadgeLabel,
+  normalizeChecklist,
+  type LifecycleBadgeLabel,
+} from "@/lib/tax-return-checklist"
 import type { ChecklistKey } from "@/lib/tax-return-checklist"
 import type { ClientWorkspace, TaxReturnChecklistStatus } from "@/lib/types/client-workspace"
 
@@ -44,14 +49,6 @@ type BulkIntakeLinkResult = { workspaceId: string; url: string }
 type ActionResult<T = void> = 
   | { success: true; data: T }
   | { success: false; error: string }
-
-type ChecklistSummary = {
-  completeCount: number
-  totalCount: number
-  remainingCount: number
-  percentComplete: number
-  missingLabels: string[]
-}
 
 interface ClientWorkspaceListProps {
   workspaces: ClientWorkspace[]
@@ -111,23 +108,12 @@ export function ClientWorkspaceList({
     }
   }
 
-  const getChecklistSummary = (workspace: ClientWorkspace): ChecklistSummary => {
-    const checklist = getChecklistForWorkspace(workspace)
-    const totalCount = checklistItems.length
-    const completeCount = checklistItems.filter((item) => checklist[item.key] === "complete").length
-    const remainingCount = totalCount - completeCount
-    const percentComplete = Math.round((completeCount / totalCount) * 100)
-    const missingLabels = checklistItems
-      .filter((item) => checklist[item.key] !== "complete")
-      .map((item) => item.label)
-
-    return {
-      completeCount,
-      totalCount,
-      remainingCount,
-      percentComplete,
-      missingLabels,
-    }
+  const badgeClassNameByStatus: Record<LifecycleBadgeLabel, string> = {
+    "Waiting on Documents": "bg-slate-100 text-slate-700",
+    Reviewing: "bg-amber-100 text-amber-800",
+    "Ready to File": "bg-blue-100 text-blue-800",
+    Filed: "bg-indigo-100 text-indigo-800",
+    Accepted: "bg-emerald-100 text-emerald-800",
   }
 
   const filteredWorkspaces = useMemo(() => {
@@ -153,14 +139,6 @@ export function ClientWorkspaceList({
         return matchesSearch && matchesTag && matchesStatus && matchesTaxYear
       })
       .sort((a, b) => {
-        const aSummary = getChecklistSummary(a)
-        const bSummary = getChecklistSummary(b)
-        if (aSummary.remainingCount !== bSummary.remainingCount) {
-          return bSummary.remainingCount - aSummary.remainingCount
-        }
-        if (aSummary.percentComplete !== bSummary.percentComplete) {
-          return aSummary.percentComplete - bSummary.percentComplete
-        }
         const aTime = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0
         const bTime = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0
         return bTime - aTime
@@ -517,41 +495,6 @@ export function ClientWorkspaceList({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Checklist Progress</CardTitle>
-          <CardDescription>Prioritized by clients with the most remaining checklist items.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Remaining clients</div>
-            <div className="mt-2 text-3xl font-bold">
-              {filteredWorkspaces.filter((workspace) => getChecklistSummary(workspace).remainingCount > 0).length}
-            </div>
-          </div>
-          <div className="rounded-lg border p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Fully complete</div>
-            <div className="mt-2 text-3xl font-bold">
-              {filteredWorkspaces.filter((workspace) => getChecklistSummary(workspace).remainingCount === 0).length}
-            </div>
-          </div>
-          <div className="rounded-lg border p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Avg. completion</div>
-            <div className="mt-2 text-3xl font-bold">
-              {filteredWorkspaces.length > 0
-                ? Math.round(
-                    filteredWorkspaces.reduce(
-                      (sum, workspace) => sum + getChecklistSummary(workspace).percentComplete,
-                      0
-                    ) / filteredWorkspaces.length
-                  )
-                : 0}
-              %
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-4">
         {filteredWorkspaces.length === 0 ? (
           <Card>
@@ -561,8 +504,8 @@ export function ClientWorkspaceList({
           </Card>
         ) : (
           filteredWorkspaces.map((workspace) => {
-            const summary = getChecklistSummary(workspace)
             const checklist = getChecklistForWorkspace(workspace)
+            const lifecycleBadge = getLifecycleBadgeLabel(checklist)
             return (
             <Card key={workspace.id}>
               <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -576,9 +519,16 @@ export function ClientWorkspaceList({
                   <div>
                     <CardTitle>{workspace.displayName}</CardTitle>
                     <CardDescription>
-                      {workspace.primaryContact?.email || "No contact email"} •{" "}
-                      {workspace.status.toUpperCase()}
+                      {workspace.primaryContact?.email || "No contact email"}
                     </CardDescription>
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      <span
+                        className={`inline-flex rounded px-2 py-1 font-medium ${badgeClassNameByStatus[lifecycleBadge]}`}
+                      >
+                        {lifecycleBadge}
+                      </span>
+                      <span className="text-muted-foreground">{workspace.status.toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -589,61 +539,35 @@ export function ClientWorkspaceList({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Percent complete</div>
-                    <div className="mt-2 flex items-end gap-1">
-                      <span className="text-6xl font-black leading-none">
-                        {summary.percentComplete}
-                      </span>
-                      <span className="text-4xl font-black leading-none text-muted-foreground">%</span>
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      {summary.completeCount} of {summary.totalCount} complete
-                    </div>
-                    <div className="text-sm font-medium">
-                      {summary.remainingCount > 0
-                        ? `${summary.remainingCount} remaining`
-                        : "All checklist items complete"}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border p-4 lg:col-span-2">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Checklist quick checkoff</div>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {checklistItems.map((item) => {
-                        const status = checklist[item.key]
-                        return (
-                          <label
-                            key={`${workspace.id}-${item.key}`}
-                            className="flex items-center gap-2 rounded border px-3 py-2 text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={status === "complete"}
-                              onChange={(event) =>
-                                toggleChecklistComplete(workspace, item.key, event.target.checked)
-                              }
-                              className="h-4 w-4 rounded border-muted"
-                            />
-                            <span className={status === "complete" ? "line-through text-muted-foreground" : ""}>
-                              {item.label}
-                            </span>
-                          </label>
-                        )
-                      })}
-                    </div>
+                <div className="rounded-lg border p-4">
+                  <div className="mb-3 text-sm font-medium">Return Status</div>
+                  <div className="space-y-2">
+                    {checklistItems.map((item) => {
+                      const status = checklist[item.key]
+                      return (
+                        <label
+                          key={`${workspace.id}-${item.key}`}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={status === "complete"}
+                            onChange={(event) =>
+                              toggleChecklistComplete(workspace, item.key, event.target.checked)
+                            }
+                            className="h-4 w-4 rounded border-muted"
+                          />
+                          <span className={status === "complete" ? "text-muted-foreground line-through" : ""}>
+                            {item.label}
+                          </span>
+                        </label>
+                      )
+                    })}
                   </div>
                 </div>
 
                 <div className="text-sm text-muted-foreground">
                   Tax years: {workspace.taxYears.join(", ") || "Not selected"}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Missing:{" "}
-                  {summary.missingLabels.length > 0
-                    ? summary.missingLabels.join(", ")
-                    : "None"}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {workspace.tags.map((tag) => (

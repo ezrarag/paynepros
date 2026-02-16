@@ -7,7 +7,6 @@ import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import {
   checklistDefaults,
   checklistItems,
-  checklistStatusLabels,
   isChecklistStatus,
   normalizeChecklist,
 } from "@/lib/tax-return-checklist"
@@ -176,9 +175,7 @@ export async function updateClientChecklistStatus(input: {
     await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
       type: "tax_return",
       title: "Return checklist updated",
-      description: `${itemLabel} moved from ${checklistStatusLabels[currentStatus]} to ${
-        checklistStatusLabels[input.status]
-      }.`,
+      description: `${itemLabel} marked ${input.status === "complete" ? "complete" : "not complete"}.`,
     })
 
     revalidatePath("/admin/clients")
