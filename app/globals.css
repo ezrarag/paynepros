@@ -64,5 +64,37 @@
   }
 }
 
+.wix-display {
+  font-family: var(--font-wix-display), "Times New Roman", serif;
+}
 
+.marketing-wix-skin {
+  --background: 40 33% 96%;
+  --foreground: 36 16% 20%;
+  --card: 40 33% 98%;
+  --card-foreground: 36 16% 20%;
+  --popover: 40 33% 98%;
+  --popover-foreground: 36 16% 20%;
+  --primary: 36 16% 20%;
+  --primary-foreground: 40 33% 98%;
+  --secondary: 38 25% 88%;
+  --secondary-foreground: 36 16% 20%;
+  --muted: 40 20% 92%;
+  --muted-foreground: 34 14% 38%;
+  --accent: 36 21% 32%;
+  --accent-foreground: 40 33% 98%;
+  --border: 40 23% 82%;
+  --input: 40 23% 82%;
+  --ring: 36 21% 32%;
+}
+
+.LWbAav {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.Kv1aVt {
+  background-color: #ada684;
+}
 

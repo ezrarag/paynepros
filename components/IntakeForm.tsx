@@ -114,7 +114,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-3xl font-bold text-navy mb-4"
+          className="wix-display mb-4 text-3xl tracking-[0.08em] text-[#2f2a22]"
         >
           Thank You!
         </motion.h3>
@@ -131,13 +131,13 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-6 p-6 bg-gray-50 rounded-lg text-left max-w-md mx-auto border border-gray-200/50"
+            className="mx-auto mt-6 max-w-md border border-[#ddd5c7] bg-[#f8f3e9] p-6 text-left"
           >
             <p className="text-sm text-muted-foreground mb-2">
-              <strong className="text-navy">Category:</strong> {classificationSummary.probableService}
+              <strong className="text-[#2f2a22]">Category:</strong> {classificationSummary.probableService}
             </p>
             <p className="text-sm text-muted-foreground">
-              Expect a response within <strong className="text-navy">{urgencyHours} hours</strong>.
+              Expect a response within <strong className="text-[#2f2a22]">{urgencyHours} hours</strong>.
             </p>
           </motion.div>
         )}
@@ -154,14 +154,14 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Name Field - Effica Style */}
       <div className="space-y-3">
-        <Label htmlFor="name" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label htmlFor="name" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
           My name is
         </Label>
         <div className="relative">
           <Input
             id="name"
             {...register("name")}
-            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
             placeholder={nameValue ? "" : "Your name"}
             aria-invalid={errors.name ? "true" : "false"}
           />
@@ -185,7 +185,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
 
       {/* Email Field - Effica Style */}
       <div className="space-y-3">
-        <Label htmlFor="email" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label htmlFor="email" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
           Contact me at
         </Label>
         <div className="relative">
@@ -193,7 +193,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             id="email"
             type="email"
             {...register("email")}
-            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
             placeholder={emailValue ? "" : "taxprep@paynepros.com"}
             aria-invalid={errors.email ? "true" : "false"}
           />
@@ -217,7 +217,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
 
       {/* Phone Field - Effica Style */}
       <div className="space-y-3">
-        <Label htmlFor="phone" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label htmlFor="phone" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
           Phone (optional)
         </Label>
         <div className="relative">
@@ -225,7 +225,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             id="phone"
             type="tel"
             {...register("phone")}
-            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold h-12 text-base"
+            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
             placeholder={phoneValue ? "" : "816-805-1433"}
             aria-invalid={errors.phone ? "true" : "false"}
           />
@@ -249,7 +249,10 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
 
       {/* Preferred Contact Method */}
       <div className="space-y-3">
-        <Label htmlFor="preferredContactMethod" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label
+          htmlFor="preferredContactMethod"
+          className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]"
+        >
           Preferred Contact Method <span className="text-destructive">*</span>
         </Label>
         <Select
@@ -258,7 +261,10 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             setValue("preferredContactMethod", value as "email" | "phone" | "either", { shouldValidate: true })
           }
         >
-          <SelectTrigger id="preferredContactMethod" className="border-gray-300 bg-transparent text-navy h-12 text-base">
+          <SelectTrigger
+            id="preferredContactMethod"
+            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]"
+          >
             <SelectValue placeholder="Select a method" />
           </SelectTrigger>
           <SelectContent>
@@ -276,14 +282,14 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
 
       {/* Service Type */}
       <div className="space-y-3">
-        <Label htmlFor="serviceType" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label htmlFor="serviceType" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
           I want to improve: <span className="text-destructive">*</span>
         </Label>
         <Select
           value={serviceType}
           onValueChange={(value) => setValue("serviceType", value, { shouldValidate: true })}
         >
-          <SelectTrigger id="serviceType" className="border-gray-300 bg-transparent text-navy h-12 text-base">
+          <SelectTrigger id="serviceType" className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]">
             <SelectValue placeholder="Select a service" />
           </SelectTrigger>
           <SelectContent>
@@ -303,14 +309,14 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
 
       {/* Message Field - Effica Style */}
       <div className="space-y-3">
-        <Label htmlFor="message" className="text-sm font-medium text-navy uppercase tracking-wide">
+        <Label htmlFor="message" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
           Additional Details <span className="text-destructive">*</span>
         </Label>
         <div className="relative">
           <Textarea
             id="message"
             {...register("message")}
-            className="border-gray-300 bg-transparent text-navy placeholder:text-gray-400 focus:border-gold focus:ring-gold min-h-[120px] text-base resize-none"
+            className="min-h-[120px] resize-none rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
             placeholder={messageValue ? "" : "Describe your tax or bookkeeping needs..."}
             rows={4}
             aria-invalid={errors.message ? "true" : "false"}
@@ -347,9 +353,9 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <Button 
+        <Button
           type="submit" 
-          className="w-full bg-navy text-offwhite hover:bg-navy-light h-14 text-base font-medium rounded-md transition-colors" 
+          className="h-12 w-full rounded-none bg-[#2f2a22] text-[#f8f5ef] hover:bg-[#1f1b15]"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Submitting..." : "Send Request"}
@@ -362,4 +368,3 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
     </form>
   )
 }
-

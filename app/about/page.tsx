@@ -1,95 +1,49 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Section } from "@/components/ui/section"
-import { PageTitle, PageDescription } from "@/components/ui/page-title"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function AboutPage() {
   return (
-    <Section>
-      <div className="mb-16">
-        <PageTitle>About Payne Professional Services</PageTitle>
-        <PageDescription>
-          Your trusted partner for tax preparation and bookkeeping
-        </PageDescription>
+    <section className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+      <div className="text-center">
+        <h1 className="wix-display text-4xl tracking-[0.11em] text-[#2f2a22] sm:text-5xl">ABOUT US</h1>
+        <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-8 text-[#5d5547]">
+          Trusted tax preparation and bookkeeping with a practical, client-first process.
+        </p>
       </div>
 
-      <div className="space-y-8">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-navy">Our Mission</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground leading-relaxed">
-              At Payne Professional Services, we're dedicated to providing
-              expert tax preparation and bookkeeping services that help our
-              clients stay compliant, organized, and confident in their
-              financial affairs.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              We understand that tax season can be stressful, and we're here
-              to make the process as smooth and worry-free as possible. Our
-              team brings years of experience and a commitment to accuracy,
-              professionalism, and personalized service.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="mt-14 space-y-4">
+        <article className="border border-[#ddd5c7] bg-[#fbf9f4] px-6 py-8 sm:px-8">
+          <h2 className="wix-display text-[29px] tracking-[0.06em] text-[#2f2a22]">Our Mission</h2>
+          <p className="mt-3 text-[15px] leading-8 text-[#5d5547]">
+            Payne Professional Services is committed to helping clients stay compliant and organized with
+            accurate tax preparation and dependable bookkeeping support throughout the year.
+          </p>
+        </article>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-navy">What We Do</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground leading-relaxed">
-              We specialize in comprehensive tax preparation services for
-              individuals and families, including:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-              <li>Individual and joint tax returns</li>
-              <li>Past-due return preparation and cleanup</li>
-              <li>Tax extensions and amendments</li>
-              <li>Year-round bookkeeping services</li>
-              <li>Tax planning and consultation</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-navy">Why Choose Us</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2 text-navy">Expertise</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Our team stays up-to-date with the latest tax laws and
-                regulations to ensure accurate filing.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2 text-navy">Personalized Service</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                We take the time to understand your unique situation and
-                provide tailored solutions.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2 text-navy">Reliability</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                You can count on us to meet deadlines and keep your
-                information secure and confidential.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2 text-navy">Ongoing Support</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                We're here for you year-round, not just during tax season.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <article className="border border-[#ddd5c7] bg-[#fbf9f4] px-6 py-8 sm:px-8">
+          <h2 className="wix-display text-[29px] tracking-[0.06em] text-[#2f2a22]">What We Provide</h2>
+          <ul className="mt-4 space-y-2 text-[15px] leading-7 text-[#5d5547]">
+            <li>Individual and joint tax return preparation</li>
+            <li>Past-due filing and cleanup support</li>
+            <li>Extensions and amended return support</li>
+            <li>Year-round bookkeeping services</li>
+            <li>Ongoing guidance for planning and compliance</li>
+          </ul>
+        </article>
       </div>
-    </Section>
+
+      <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
+        <Button asChild className="rounded-none bg-[#2f2a22] px-7 py-6 text-[#f8f5ef] hover:bg-[#1f1b15]">
+          <Link href="/book">Book Consultation</Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="rounded-none border-[#2f2a22] bg-transparent px-7 py-6 text-[#2f2a22] hover:bg-[#2f2a22] hover:text-[#f8f5ef]"
+        >
+          <Link href="/contact">Contact Us</Link>
+        </Button>
+      </div>
+    </section>
   )
 }
-
-
-
