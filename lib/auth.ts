@@ -11,6 +11,15 @@ export interface CurrentUser {
   role: AdminRole
 }
 
+/** Session user as returned by getCurrentClientUser (client context: has workspaceId). */
+export interface CurrentClientUser {
+  id: string
+  name: string | null
+  email: string | null
+  image?: string | null
+  clientWorkspaceId: string
+}
+
 /**
  * Get the current admin user from session. Use in server components/actions.
  * Returns null if not signed in or not an admin session (no tenantId/adminRole).
@@ -38,6 +47,36 @@ export async function requireAuth(): Promise<CurrentUser> {
   if (!user) {
     const { redirect } = await import("next/navigation")
     redirect("/admin/login")
+    throw new Error("Unreachable after redirect")
+  }
+  return user
+}
+
+/**
+ * Get the current client user from session. Use in client dashboard routes/actions.
+ * Returns null if not signed in or not a client-scoped session.
+ */
+export async function getCurrentClientUser(): Promise<CurrentClientUser | null> {
+  const session = await auth()
+  const user = session?.user
+  if (!user?.id || !user.clientWorkspaceId || user.clientRole !== "client") return null
+  return {
+    id: user.id,
+    name: user.name ?? null,
+    email: user.email ?? null,
+    image: user.image ?? null,
+    clientWorkspaceId: user.clientWorkspaceId,
+  }
+}
+
+/**
+ * Require an authenticated client session. Redirects to /client/login if missing.
+ */
+export async function requireClientAuth(): Promise<CurrentClientUser> {
+  const user = await getCurrentClientUser()
+  if (!user) {
+    const { redirect } = await import("next/navigation")
+    redirect("/client/login")
     throw new Error("Unreachable after redirect")
   }
   return user

@@ -16,7 +16,7 @@ interface NavigationProps {
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
+  { href: "/about-us", label: "About" },
   { href: "/services", label: "Services" },
   { href: "/process", label: "Process" },
   { href: "/contact", label: "Contact" },

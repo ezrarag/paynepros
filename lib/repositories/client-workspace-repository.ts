@@ -105,6 +105,72 @@ let mockTimeline: TimelineEvent[] = [
 ]
 
 export class ClientWorkspaceRepository {
+  async findByPrimaryContactEmail(email: string): Promise<ClientWorkspace | null> {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) {
+      return null
+    }
+
+    if (!adminDb) {
+      console.warn("Firebase Admin not initialized. Returning mock workspace by email.")
+      return (
+        mockWorkspaces.find(
+          (workspace) =>
+            workspace.primaryContact?.email?.trim().toLowerCase() === normalizedEmail
+        ) ?? null
+      )
+    }
+
+    try {
+      const directMatch = await adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .where("primaryContact.email", "==", normalizedEmail)
+        .limit(1)
+        .get()
+
+      if (!directMatch.empty) {
+        const doc = directMatch.docs[0]
+        const data = doc.data()
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: toIsoString(data?.createdAt),
+          updatedAt: toIsoString(data?.updatedAt),
+          lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+        } as ClientWorkspace
+      }
+
+      // Fallback for legacy records with mixed-case email values.
+      const fallbackSnapshot = await adminDb
+        .collection(WORKSPACES_COLLECTION)
+        .orderBy("updatedAt", "desc")
+        .limit(200)
+        .get()
+
+      const fallbackDoc = fallbackSnapshot.docs.find((doc) => {
+        const data = doc.data()
+        const docEmail = data?.primaryContact?.email
+        return typeof docEmail === "string" && docEmail.trim().toLowerCase() === normalizedEmail
+      })
+
+      if (!fallbackDoc) {
+        return null
+      }
+
+      const data = fallbackDoc.data()
+      return {
+        ...data,
+        id: fallbackDoc.id,
+        createdAt: toIsoString(data?.createdAt),
+        updatedAt: toIsoString(data?.updatedAt),
+        lastActivityAt: data?.lastActivityAt ? toIsoString(data.lastActivityAt) : undefined,
+      } as ClientWorkspace
+    } catch (error) {
+      console.error("Failed to fetch workspace by primary contact email:", error)
+      throw new Error("Failed to fetch client workspace")
+    }
+  }
+
   async findAll(limitCount: number = 25): Promise<ClientWorkspace[]> {
     if (!adminDb) {
       console.warn("Firebase Admin not initialized. Returning mock workspaces.")

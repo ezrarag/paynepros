@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Megaphone, BarChart3, Image } from "lucide-react"
+import { Megaphone, BarChart3, LayoutTemplate } from "lucide-react"
 import Link from "next/link"
 
 export default function MarketingPage() {
@@ -15,7 +15,7 @@ export default function MarketingPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -62,6 +62,25 @@ export default function MarketingPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5" />
+              Content
+            </CardTitle>
+            <CardDescription>
+              Manage homepage sections, image blocks, and copy
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/admin/marketing/content">
+                Open Content Manager
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -80,4 +99,3 @@ export default function MarketingPage() {
     </div>
   )
 }
-

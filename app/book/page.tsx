@@ -64,7 +64,7 @@ export default function BookPage() {
   }
 
   return (
-    <section className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+    <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
       <div className="text-center">
         <h1 className="wix-display text-4xl tracking-[0.11em] text-[#2f2a22] sm:text-5xl">
           BOOK A CONSULTATION

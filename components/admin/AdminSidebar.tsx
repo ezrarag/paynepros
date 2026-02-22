@@ -11,6 +11,7 @@ import {
   Wallet,
   BookOpen,
   Megaphone,
+  LayoutTemplate,
   Truck,
   FileText,
   Calculator,
@@ -65,6 +66,7 @@ const dashboardSubItems = [
 const subscriptionItems = [
   { href: "/admin/wallet", label: "Wallet", icon: Wallet },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/admin/marketing/content", label: "Content", icon: LayoutTemplate },
   { href: "/admin/operations", label: "Operations", icon: Truck },
   { href: "/admin/requests", label: "Requests", icon: FileText },
 ]

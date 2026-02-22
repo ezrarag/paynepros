@@ -107,6 +107,49 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       },
     }),
+    Credentials({
+      id: "client",
+      name: "Client",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email as string | undefined
+        const password = credentials?.password as string | undefined
+
+        if (!email || !password) {
+          return null
+        }
+
+        // Temporary client login for testing all client workspaces.
+        if (password !== "temp123") {
+          return null
+        }
+
+        try {
+          const { clientWorkspaceRepository } = await import(
+            "@/lib/repositories/client-workspace-repository"
+          )
+          const workspace = await clientWorkspaceRepository.findByPrimaryContactEmail(email)
+          if (!workspace) {
+            return null
+          }
+          const workspaceEmail = workspace.primaryContact?.email ?? email
+
+          return {
+            id: `client:${workspace.id}`,
+            name: workspace.displayName,
+            email: workspaceEmail,
+            clientWorkspaceId: workspace.id,
+            clientRole: "client",
+          }
+        } catch (error) {
+          console.error("Client authentication error:", error)
+          return null
+        }
+      },
+    }),
     // WhatsApp OTP fallback via credentials
     Credentials({
       id: "whatsapp",
@@ -124,6 +167,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async signIn({ user, account, profile }) {
       // Admin Credentials: no repository sync
       if (account?.provider === "admin") return true
+      // Client Credentials: no repository sync
+      if (account?.provider === "client") return true
       // Skip repository sync in Edge runtime (middleware) - only run in Node.js runtime
       if (user?.id && typeof globalThis.EdgeRuntime === "undefined") {
         try {
@@ -166,6 +211,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user.adminRole = token.adminRole as import("@/lib/types/admin").AdminRole
           return session
         }
+        // Client session: workspace scoped
+        if (token.clientWorkspaceId && token.clientRole) {
+          session.user.clientWorkspaceId = token.clientWorkspaceId as string
+          session.user.clientRole = token.clientRole as "client"
+          return session
+        }
         // Skip repository fetch in Edge runtime - only run in Node.js runtime
         if (token.sub && typeof globalThis.EdgeRuntime === "undefined") {
           try {
@@ -185,12 +236,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        const u = user as { tenantId?: string; adminRole?: import("@/lib/types/admin").AdminRole }
+        const u = user as {
+          tenantId?: string
+          adminRole?: import("@/lib/types/admin").AdminRole
+          clientWorkspaceId?: string
+          clientRole?: "client"
+        }
         if (u.tenantId) token.tenantId = u.tenantId
         if (u.adminRole) token.adminRole = u.adminRole
+        if (u.clientWorkspaceId) token.clientWorkspaceId = u.clientWorkspaceId
+        if (u.clientRole) token.clientRole = u.clientRole
       }
       return token
     },
   },
 })
-

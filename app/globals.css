@@ -68,6 +68,10 @@
   font-family: var(--font-wix-display), "Times New Roman", serif;
 }
 
+.wix-heading {
+  font-family: var(--font-wix-heading), "Times New Roman", serif;
+}
+
 .marketing-wix-skin {
   --background: 40 33% 96%;
   --foreground: 36 16% 20%;
@@ -95,6 +99,5 @@
 }
 
 .Kv1aVt {
-  background-color: #ada684;
+  background-color: #AAA47F;
 }
-

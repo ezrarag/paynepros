@@ -14,6 +14,9 @@ declare module "next-auth" {
       /** Admin dashboard: tenant and role. Set when signed in via admin Credentials. */
       tenantId?: string
       adminRole?: AdminRole
+      /** Client dashboard: scoped workspace. Set when signed in via client Credentials. */
+      clientWorkspaceId?: string
+      clientRole?: "client"
     }
   }
 
@@ -23,6 +26,8 @@ declare module "next-auth" {
     subscriptionStatus?: "active" | "inactive" | "cancelled"
     tenantId?: string
     adminRole?: AdminRole
+    clientWorkspaceId?: string
+    clientRole?: "client"
   }
 }
 
@@ -33,6 +38,7 @@ declare module "next-auth/jwt" {
     subscriptionStatus?: "active" | "inactive" | "cancelled"
     tenantId?: string
     adminRole?: AdminRole
+    clientWorkspaceId?: string
+    clientRole?: "client"
   }
 }
-

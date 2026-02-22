@@ -2,7 +2,7 @@ import { IntakeForm } from "@/components/IntakeForm"
 
 export default function ContactPage() {
   return (
-    <section className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+    <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
       <div className="text-center">
         <h1 className="wix-display text-4xl tracking-[0.11em] text-[#2f2a22] sm:text-5xl">CONTACT US</h1>
         <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-8 text-[#5d5547]">

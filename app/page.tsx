@@ -1,8 +1,11 @@
-import { WixHero } from "@/components/marketing/WixHero"
+import { HomeSections } from "@/components/marketing/HomeSections"
+import { marketingContentRepository } from "@/lib/repositories/marketing-content-repository"
 
-export default function Home() {
+export default async function Home() {
+  const content = await marketingContentRepository.getHomeContent()
   return (
-    <WixHero />
+    <div className="h-full">
+      <HomeSections sections={content.sections} />
+    </div>
   )
 }
-

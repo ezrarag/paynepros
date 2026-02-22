@@ -3,40 +3,34 @@ import { Button } from "@/components/ui/button"
 
 const services = [
   {
-    id: "individual",
-    title: "Individual Tax Preparation",
+    id: "tax-services",
+    title: "Tax Services",
     description:
-      "Comprehensive preparation for W-2 and 1099 income, with careful review of deductions and credits.",
+      "Tax preparation can be daunting, but we're here for you. Our tech-driven process ensures your tax forms are accurately filed and compliant. You can relax knowing your taxes are on time, avoiding penalties while maximizing your tax strategy.",
   },
   {
-    id: "joint",
-    title: "Joint / Family Returns",
+    id: "accounting-services",
+    title: "Accounting Services",
     description:
-      "Strategic filing for married couples and families, including dependents, credits, and education tax items.",
+      "We offer a clear view of your business's financial performance through precise bookkeeping and reporting. Our expert guidance helps you make informed decisions for growth. You'll get accurate records that provide the tools and confidence to plan and allocate resources effectively.",
   },
   {
-    id: "past-due",
-    title: "Past-Due / Cleanup",
+    id: "consultation",
+    title: "Consultation",
     description:
-      "Catch-up filing for previous years with practical support to resolve outstanding tax issues.",
+      "We are here to help you overcome challenges and seize opportunities. Through detailed analysis, we offer tailored strategies for your business needs. With your approval, we implement these strategies to achieve your goals. You'll get access to expert guidance and support to manage situations and achieve results.",
   },
   {
-    id: "bookkeeping",
-    title: "Bookkeeping",
+    id: "research-special-projects",
+    title: "Research & Special Projects",
     description:
-      "Year-round bookkeeping services to keep records organized and ready for tax season.",
-  },
-  {
-    id: "extensions",
-    title: "Extensions & Amendments",
-    description:
-      "Extension filing and amended returns for corrections, missed deductions, and compliance updates.",
+      "Need help with a project or insights? We offer tailored research and actionable information for decision-making. From market analysis to operational assessments, we provide reliable data and recommendations to help you make confident business decisions.",
   },
 ]
 
 export default function ServicesPage() {
   return (
-    <section className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+    <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
       <div className="text-center">
         <h1 className="wix-display text-4xl tracking-[0.11em] text-[#2f2a22] sm:text-5xl">
           SERVICES
@@ -61,7 +55,7 @@ export default function ServicesPage() {
 
       <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
         <Button asChild className="rounded-none bg-[#2f2a22] px-7 py-6 text-[#f8f5ef] hover:bg-[#1f1b15]">
-          <Link href="/book">Book Consultation</Link>
+          <Link href="/admin/login">Sign In</Link>
         </Button>
         <Button
           asChild

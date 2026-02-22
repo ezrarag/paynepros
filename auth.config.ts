@@ -12,11 +12,12 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
+      const isAdminSession = !!auth?.user?.adminRole
       const isOnAdmin = nextUrl.pathname.startsWith("/admin")
       const isOnLogin = nextUrl.pathname.startsWith("/admin/login")
       
       if (isOnAdmin && !isOnLogin) {
-        if (isLoggedIn) return true
+        if (isLoggedIn && isAdminSession) return true
         return false // Redirect unauthenticated users to login page
       }
       
@@ -25,4 +26,3 @@ export const authConfig = {
   },
   providers: [], // Add providers with an empty array for now
 } satisfies NextAuthConfig
-

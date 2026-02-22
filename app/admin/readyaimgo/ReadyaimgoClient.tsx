@@ -30,7 +30,7 @@ export default function ReadyaimgoClient({ initialData }: ReadyaimgoClientProps)
   const walletBalance = initialData.walletBalance
   const totalLeads = initialData.totalLeads
   const recentLeads = initialData.recentLeads
-  const lockedFeatures = ["Wallet", "Marketing", "Operations", "Requests"]
+  const lockedFeatures = ["Wallet", "Marketing", "Content", "Operations", "Requests"]
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter, Cormorant_Garamond } from "next/font/google"
+import { Aboreto, Inter, Cormorant_Garamond } from "next/font/google"
 import "./globals.css"
 import { LayoutWrapper } from "@/components/LayoutWrapper"
 
@@ -8,6 +8,11 @@ const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   variable: "--font-wix-display",
   weight: ["500", "600", "700"],
+})
+const aboreto = Aboreto({
+  subsets: ["latin"],
+  variable: "--font-wix-heading",
+  weight: "400",
 })
 
 export const metadata: Metadata = {
@@ -23,11 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${cormorant.variable}`}>
+      <body className={`${inter.className} ${cormorant.variable} ${aboreto.variable}`}>
         <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   )
 }
-
 
