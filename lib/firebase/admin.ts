@@ -1,6 +1,7 @@
 import { initializeApp, cert, getApps } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
 import { Timestamp } from "firebase-admin/firestore"
+import { getStorage } from "firebase-admin/storage"
 
 function getPrivateKey(): string | undefined {
   const key = process.env.FIREBASE_PRIVATE_KEY
@@ -91,4 +92,9 @@ if (firestore) {
 }
 
 export const adminDb = firestore
+const storageBucketName =
+  process.env.FIREBASE_STORAGE_BUCKET ?? process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+export const adminStorageBucket = adminApp && storageBucketName
+  ? getStorage(adminApp).bucket(storageBucketName)
+  : null
 export { Timestamp }

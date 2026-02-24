@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
 import { requestRepository } from "@/lib/repositories/request-repository"
+import { sendSlackRequestNotification } from "@/lib/slack"
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,10 +12,17 @@ export async function GET(request: NextRequest) {
 
     // Mock user ID for development
     const mockUserId = "mock-admin-id"
+    const source = request.nextUrl.searchParams.get("source")
+    const status = request.nextUrl.searchParams.get("status")
     const requests = await requestRepository.findByUserId(mockUserId)
+    const filteredRequests = requests.filter((item) => {
+      const sourceMatch = source ? item.source === source : true
+      const statusMatch = status ? item.status === status : true
+      return sourceMatch && statusMatch
+    })
     
     // Ensure we always return an array
-    return NextResponse.json(Array.isArray(requests) ? requests : [])
+    return NextResponse.json(Array.isArray(filteredRequests) ? filteredRequests : [])
   } catch (error) {
     console.error("Error fetching requests:", error)
     return NextResponse.json([], { status: 200 }) // Return empty array instead of error
@@ -34,7 +41,16 @@ export async function POST(request: NextRequest) {
     const mockUserId = "mock-admin-id"
 
     const body = await request.json()
-    const { title, description, priority, category, sendToBeamParticipants } =
+    const {
+      title,
+      description,
+      priority,
+      category,
+      sendToBeamParticipants,
+      source,
+      pagePath,
+      screenshotUrl,
+    } =
       body
 
     const contentRequest = await requestRepository.create({
@@ -44,9 +60,29 @@ export async function POST(request: NextRequest) {
       priority: priority || "medium",
       category: category || "other",
       sendToBeamParticipants: sendToBeamParticipants || false,
+      source: source || "admin_requests",
+      pagePath: pagePath || "",
+      screenshotUrl: screenshotUrl || "",
     })
 
-    // Send to Pulse webhook if configured
+    // Send to Slack webhook if configured
+    try {
+      await sendSlackRequestNotification({
+        requestId: contentRequest.id,
+        title: contentRequest.title,
+        description: contentRequest.description,
+        priority: contentRequest.priority,
+        category: contentRequest.category,
+        source: contentRequest.source,
+        pagePath: contentRequest.pagePath,
+        screenshotUrl: contentRequest.screenshotUrl,
+        createdAt: contentRequest.createdAt,
+      })
+    } catch (slackError) {
+      console.error("Error sending to Slack webhook:", slackError)
+    }
+
+    // Backward-compatible Pulse webhook support
     const pulseWebhookUrl = process.env.PULSE_WEBHOOK_URL
     if (pulseWebhookUrl) {
       try {
@@ -63,6 +99,9 @@ export async function POST(request: NextRequest) {
             priority,
             category,
             sendToBeamParticipants,
+            source,
+            pagePath,
+            screenshotUrl,
           }),
         })
       } catch (webhookError) {
@@ -79,4 +118,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

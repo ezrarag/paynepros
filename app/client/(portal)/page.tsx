@@ -3,6 +3,7 @@ import { requireClientAuth } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { BeamRequestsPanel } from "@/components/client/BeamRequestsPanel"
 import {
   checklistItems,
   checklistStatusLabels,
@@ -123,6 +124,8 @@ export default async function ClientPortalPage() {
           })}
         </CardContent>
       </Card>
+
+      <BeamRequestsPanel />
 
       <Card>
         <CardHeader>

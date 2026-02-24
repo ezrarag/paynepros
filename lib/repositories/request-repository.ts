@@ -9,6 +9,9 @@ export interface ContentRequest {
   category: 'social' | 'bookkeeping' | 'marketing' | 'strategic' | 'system' | 'other'
   status: 'pending' | 'in_progress' | 'completed' | 'needs_revision'
   sendToBeamParticipants: boolean
+  source?: 'beam' | 'admin_requests'
+  pagePath?: string
+  screenshotUrl?: string
   attachments?: string[]
   createdAt: string
   updatedAt: string
@@ -17,7 +20,9 @@ export interface ContentRequest {
 const REQUESTS_COLLECTION = 'contentRequests'
 
 export class RequestRepository {
-  async create(request: Omit<ContentRequest, 'id' | 'createdAt' | 'updatedAt'>): Promise<ContentRequest> {
+  async create(
+    request: Omit<ContentRequest, 'id' | 'status' | 'createdAt' | 'updatedAt'>
+  ): Promise<ContentRequest> {
     if (!adminDb) {
       console.warn("Firebase Admin not initialized. Cannot create request.")
       const now = new Date().toISOString()
@@ -102,4 +107,3 @@ export class RequestRepository {
 }
 
 export const requestRepository = new RequestRepository()
-

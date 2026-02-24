@@ -22,12 +22,17 @@ interface ContentRequest {
   priority: "low" | "medium" | "high"
   category: string
   status: "pending" | "in_progress" | "completed" | "needs_revision"
+  source?: "beam" | "admin_requests"
+  pagePath?: string
+  screenshotUrl?: string
   createdAt: string
 }
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<ContentRequest[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -44,25 +49,54 @@ export default function RequestsPage() {
     try {
       const response = await fetch("/api/requests")
       const data = await response.json()
-      // Ensure data is always an array
       setRequests(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error fetching requests:", error)
-      setRequests([]) // Set empty array on error
+      setRequests([])
     }
+  }
+
+  const uploadScreenshot = async (file: File): Promise<string> => {
+    const uploadForm = new FormData()
+    uploadForm.append("file", file)
+
+    const uploadResponse = await fetch("/api/requests/upload", {
+      method: "POST",
+      body: uploadForm,
+    })
+
+    if (!uploadResponse.ok) {
+      throw new Error("Screenshot upload failed")
+    }
+
+    const uploadData = await uploadResponse.json()
+    return uploadData.url || ""
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+
     try {
+      let screenshotUrl = ""
+      if (attachmentFile) {
+        screenshotUrl = await uploadScreenshot(attachmentFile)
+      }
+
       const response = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          source: "admin_requests",
+          pagePath: "/admin/requests",
+          screenshotUrl,
+        }),
       })
 
       if (response.ok) {
         setShowForm(false)
+        setAttachmentFile(null)
         setFormData({
           title: "",
           description: "",
@@ -74,6 +108,24 @@ export default function RequestsPage() {
       }
     } catch (error) {
       console.error("Error creating request:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const updateStatus = async (requestId: string, status: ContentRequest["status"]) => {
+    try {
+      const response = await fetch(`/api/requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+
+      if (response.ok) {
+        fetchRequests()
+      }
+    } catch (error) {
+      console.error("Error updating request status:", error)
     }
   }
 
@@ -151,7 +203,7 @@ export default function RequestsPage() {
                 <Label htmlFor="priority">Priority</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value: any) =>
+                  onValueChange={(value: "low" | "medium" | "high") =>
                     setFormData({ ...formData, priority: value })
                   }
                 >
@@ -177,6 +229,16 @@ export default function RequestsPage() {
                   rows={4}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="screenshot">Screenshot (optional)</Label>
+                <Input
+                  id="screenshot"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                />
+                <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB.</p>
+              </div>
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -195,7 +257,9 @@ export default function RequestsPage() {
                 </Label>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Submit Request</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting..." : "Submit Request"}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -220,27 +284,67 @@ export default function RequestsPage() {
           requests.map((request) => (
             <Card key={request.id}>
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       {getStatusIcon(request.status)}
                       {request.title}
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      {request.category} • {request.priority} priority
+                      {request.category} • {request.priority} priority • {request.source || "manual"}
                     </CardDescription>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(request.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm">{request.description}</p>
-                <div className="mt-4">
+                {request.pagePath ? (
+                  <p className="text-xs text-muted-foreground mt-2">Page: {request.pagePath}</p>
+                ) : null}
+                {request.screenshotUrl ? (
+                  <a
+                    className="text-sm underline mt-2 inline-block"
+                    href={request.screenshotUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View screenshot
+                  </a>
+                ) : null}
+                <div className="mt-4 flex flex-wrap gap-2 items-center">
                   <span className="text-xs px-2 py-1 bg-muted rounded">
                     {request.status}
                   </span>
+                  {request.status !== "in_progress" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateStatus(request.id, "in_progress")}
+                    >
+                      Mark In Progress
+                    </Button>
+                  ) : null}
+                  {request.status !== "completed" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateStatus(request.id, "completed")}
+                    >
+                      Mark Completed
+                    </Button>
+                  ) : null}
+                  {request.status === "completed" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateStatus(request.id, "pending")}
+                    >
+                      Re-open
+                    </Button>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
@@ -250,4 +354,3 @@ export default function RequestsPage() {
     </div>
   )
 }
-
