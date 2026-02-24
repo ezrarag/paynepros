@@ -27,14 +27,15 @@ export async function createClient(input: {
 }): Promise<ActionResult<{ id: string }>> {
   try {
     const now = new Date().toISOString()
+    const primaryContact = {
+      name: input.name,
+      ...(input.email ? { email: input.email } : {}),
+      ...(input.phone ? { phone: input.phone } : {}),
+    }
     const workspace = await clientWorkspaceRepository.create({
       displayName: input.name,
       status: "active",
-      primaryContact: {
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-      },
+      primaryContact,
       tags: input.tags,
       taxYears: input.taxYears,
       taxReturnChecklist: checklistDefaults,

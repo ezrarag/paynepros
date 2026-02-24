@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -8,17 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-type ClientLoginOption = {
-  workspaceId: string
-  name: string
-  email: string
-}
-
-interface ClientLoginClientProps {
-  clientOptions: ClientLoginOption[]
-}
-
-export default function ClientLoginClient({ clientOptions }: ClientLoginClientProps) {
+export default function ClientLoginClient() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? "/client"
 
@@ -26,8 +16,45 @@ export default function ClientLoginClient({ clientOptions }: ClientLoginClientPr
   const [password, setPassword] = useState("temp123")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [csrfToken, setCsrfToken] = useState<string | null>(null)
 
-  const quickClients = useMemo(() => clientOptions.slice(0, 12), [clientOptions])
+  useEffect(() => {
+    const fetchCsrf = async () => {
+      try {
+        const res = await fetch("/api/auth/csrf", {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        })
+        if (!res.ok) {
+          throw new Error(`CSRF fetch failed: ${res.status}`)
+        }
+        const data = await res.json()
+        setCsrfToken(data.csrfToken)
+      } catch (err) {
+        console.error("Failed to fetch CSRF token:", err)
+        setError("Unable to initialize login security token. Refresh and try again.")
+      }
+    }
+    fetchCsrf()
+  }, [])
+
+  const getCsrfToken = async (): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/auth/csrf", {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      })
+      if (!res.ok) {
+        throw new Error(`CSRF fetch failed: ${res.status}`)
+      }
+      const data = await res.json()
+      setCsrfToken(data.csrfToken)
+      return data.csrfToken
+    } catch (err) {
+      console.error("Failed to fetch CSRF token:", err)
+      return null
+    }
+  }
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -37,27 +64,43 @@ export default function ClientLoginClient({ clientOptions }: ClientLoginClientPr
 
     setIsLoading(true)
     setError(null)
+    try {
+      const token = csrfToken ?? (await getCsrfToken())
+      if (!token) {
+        setError("Unable to initialize login security token. Refresh and try again.")
+        setIsLoading(false)
+        return
+      }
 
-    const result = await signIn("client", {
-      email,
-      password,
-      callbackUrl,
-      redirect: false,
-    })
+      const result = await signIn("client", {
+        email,
+        password,
+        callbackUrl,
+        redirect: false,
+      })
 
-    if (result?.error) {
-      setError("Invalid credentials. Use a client email and temp123.")
+      if (result?.error) {
+        if (result.error.toLowerCase().includes("csrf")) {
+          setError("Security token expired. Refresh the page and try again.")
+        } else {
+          setError("Invalid credentials. Use a client email and temp123.")
+        }
+        setIsLoading(false)
+        return
+      }
+
+      if (result?.ok) {
+        window.location.href = callbackUrl
+        return
+      }
+
+      setError("Sign in failed. Please try again.")
       setIsLoading(false)
-      return
+    } catch (err) {
+      console.error("Client sign-in failed:", err)
+      setError("Sign in request failed. Please try again.")
+      setIsLoading(false)
     }
-
-    if (result?.ok) {
-      window.location.href = callbackUrl
-      return
-    }
-
-    setError("Sign in failed. Please try again.")
-    setIsLoading(false)
   }
 
   return (
@@ -104,28 +147,13 @@ export default function ClientLoginClient({ clientOptions }: ClientLoginClientPr
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button className="w-full" onClick={handleSignIn} disabled={isLoading}>
+          <Button className="w-full" onClick={handleSignIn} disabled={isLoading || !csrfToken}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
 
-          {quickClients.length > 0 && (
-            <div className="space-y-2 border-t pt-4">
-              <p className="text-xs text-muted-foreground">Quick-fill test users</p>
-              <div className="flex flex-wrap gap-2">
-                {quickClients.map((client) => (
-                  <Button
-                    key={client.workspaceId}
-                    variant="outline"
-                    size="sm"
-                    className="h-auto py-1"
-                    onClick={() => setEmail(client.email)}
-                  >
-                    {client.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+          <p className="text-xs text-muted-foreground border-t pt-4">
+            Use a client primary-contact email and password <code>temp123</code>.
+          </p>
         </CardContent>
       </Card>
     </div>

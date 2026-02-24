@@ -1,17 +1,7 @@
 import { Suspense } from "react"
-import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import ClientLoginClient from "./ClientLoginClient"
 
 export default async function ClientLoginPage() {
-  const workspaces = await clientWorkspaceRepository.findAll(200)
-  const clientOptions = workspaces
-    .filter((workspace) => workspace.primaryContact?.email)
-    .map((workspace) => ({
-      workspaceId: workspace.id,
-      name: workspace.displayName,
-      email: workspace.primaryContact?.email ?? "",
-    }))
-
   return (
     <Suspense
       fallback={
@@ -20,7 +10,7 @@ export default async function ClientLoginPage() {
         </div>
       }
     >
-      <ClientLoginClient clientOptions={clientOptions} />
+      <ClientLoginClient />
     </Suspense>
   )
 }

@@ -236,6 +236,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        // Reset scoped auth fields on every fresh sign-in to avoid cross-role bleed
+        // (e.g., admin -> client in the same browser session).
+        delete token.tenantId
+        delete token.adminRole
+        delete token.clientWorkspaceId
+        delete token.clientRole
+
         const u = user as {
           tenantId?: string
           adminRole?: import("@/lib/types/admin").AdminRole

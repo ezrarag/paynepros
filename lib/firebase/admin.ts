@@ -65,5 +65,30 @@ try {
   adminApp = null
 }
 
-export const adminDb = adminApp ? getFirestore(adminApp) : null
+const firestore = adminApp ? getFirestore(adminApp) : null
+
+type AdminFirestoreGlobals = typeof globalThis & {
+  __adminFirestoreSettingsApplied?: boolean
+}
+const adminFirestoreGlobals = globalThis as AdminFirestoreGlobals
+
+if (firestore) {
+  // Avoid duplicate settings() calls during Next.js module re-evaluation.
+  if (!adminFirestoreGlobals.__adminFirestoreSettingsApplied) {
+    try {
+      // Prevent write failures when optional fields are intentionally omitted.
+      firestore.settings({ ignoreUndefinedProperties: true })
+      adminFirestoreGlobals.__adminFirestoreSettingsApplied = true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes("Firestore has already been initialized")) {
+        adminFirestoreGlobals.__adminFirestoreSettingsApplied = true
+      } else {
+        throw error
+      }
+    }
+  }
+}
+
+export const adminDb = firestore
 export { Timestamp }
