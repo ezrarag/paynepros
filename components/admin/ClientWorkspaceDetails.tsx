@@ -149,6 +149,10 @@ export function ClientWorkspaceDetails({
     ...normalizeChecklist(workspace.taxReturnChecklist),
     ...checklistOverrides,
   }
+  const intakeNotes =
+    typeof latestIntake?.responses?.notes === "string"
+      ? latestIntake.responses.notes.trim()
+      : ""
   
   // Mock client forms with send history
   const [clientForms, setClientForms] = useState<ClientForm[]>([
@@ -221,6 +225,7 @@ export function ClientWorkspaceDetails({
   const [mailState, setMailState] = useState("")
   const [mailZip, setMailZip] = useState("")
   const [mailNote, setMailNote] = useState("")
+  const [expandedTimelineEventId, setExpandedTimelineEventId] = useState<string | null>(null)
   const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
     documentsComplete: {
       container: "bg-slate-100/90 border-slate-200",
@@ -558,6 +563,18 @@ export function ClientWorkspaceDetails({
     }
   }
 
+  const formatMetadataValue = (value: unknown): string => {
+    if (value == null) return "—"
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      return String(value)
+    }
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return String(value)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -712,8 +729,8 @@ export function ClientWorkspaceDetails({
                 <div className="space-y-4">
                   {timeline.map((event) => (
                     <div key={event.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
                           <div className="text-sm font-medium">{event.title}</div>
                           {event.description && (
                             <div className="text-sm text-muted-foreground mt-1">
@@ -724,10 +741,40 @@ export function ClientWorkspaceDetails({
                             {event.type}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(event.createdAt).toLocaleString()}
-                        </span>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(event.createdAt).toLocaleString()}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setExpandedTimelineEventId((prev) =>
+                                prev === event.id ? null : event.id
+                              )
+                            }
+                          >
+                            {expandedTimelineEventId === event.id ? "Hide changes" : "View changes"}
+                          </Button>
+                        </div>
                       </div>
+                      {expandedTimelineEventId === event.id && (
+                        <div className="mt-3 border-t pt-3 space-y-2 text-xs">
+                          {event.metadata && Object.keys(event.metadata).length > 0 ? (
+                            Object.entries(event.metadata).map(([key, value]) => (
+                              <div key={key} className="grid grid-cols-[140px_1fr] gap-2">
+                                <span className="font-medium text-foreground">{key}</span>
+                                <span className="text-muted-foreground break-words">
+                                  {formatMetadataValue(value)}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground">No detailed metadata for this event.</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -963,20 +1010,29 @@ export function ClientWorkspaceDetails({
                   .filter((item) => checklist[item.key] !== "complete")
                   .map((item) => {
                     const rowStyle = checklistRowStyles[item.key]
+                    const showIntakeNotesForRow = item.key === "otherCompleted" && intakeNotes.length > 0
                     return (
                       <div
                         key={item.key}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
+                        className={`rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
                       >
-                        <span className="font-medium">{item.label}</span>
-                        <button
-                          type="button"
-                          onClick={() => completeChecklistItem(item.key)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
-                          aria-label={`Complete ${item.label}`}
-                        >
-                          +
-                        </button>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{item.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => completeChecklistItem(item.key)}
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
+                            aria-label={`Complete ${item.label}`}
+                          >
+                            +
+                          </button>
+                        </div>
+                        {showIntakeNotesForRow && (
+                          <div className="mt-2 rounded-md border bg-white/60 px-2 py-2 text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">Client note:</span>{" "}
+                            {intakeNotes}
+                          </div>
+                        )}
                       </div>
                     )
                   })

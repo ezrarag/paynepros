@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { intakeSteps, IntakeStepField } from "@/lib/intake/steps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ interface IntakeFlowProps {
 type IntakeFormState = Record<string, any>
 
 export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initialKind }: IntakeFlowProps) {
+  const router = useRouter()
   const [stepIndex, setStepIndex] = useState(0)
   const [formState, setFormState] = useState<IntakeFormState>({})
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +92,9 @@ export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initi
         return
       }
       setSubmitted(true)
+      setTimeout(() => {
+        router.push("/client")
+      }, 900)
     } catch (err) {
       setError("Unable to submit intake.")
     }
@@ -125,7 +130,7 @@ export function IntakeFlow({ token, workspaceId: initialWorkspaceId, kind: initi
         <CardHeader>
           <CardTitle>Thank you!</CardTitle>
           <CardDescription>
-            Your intake has been received. We will follow up if we need anything else.
+            Your intake has been received. Taking you to your dashboard...
           </CardDescription>
         </CardHeader>
       </Card>

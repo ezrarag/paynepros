@@ -17,7 +17,7 @@ export const checklistItems = [
   { key: "readyForTaxHawk", label: "Entered" },
   { key: "incomeReviewed", label: "Identification" },
   { key: "bankInfoCollected", label: "Bank Info" },
-  { key: "otherCompleted", label: "Other" },
+  { key: "otherCompleted", label: "Anything Else Follow-up" },
   { key: "filed", label: "Filed" },
   { key: "accepted", label: "Accepted" },
 ] as const

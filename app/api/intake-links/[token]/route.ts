@@ -6,7 +6,7 @@ import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { intakeSteps } from "@/lib/intake/steps"
 import { verifyIntakeLinkToken } from "@/lib/intake/link-token"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
-import { checklistDefaults } from "@/lib/tax-return-checklist"
+import { checklistDefaults, normalizeChecklist } from "@/lib/tax-return-checklist"
 
 function parseTaxYears(value: unknown): number[] {
   if (Array.isArray(value)) {
@@ -55,6 +55,9 @@ export async function POST(
   const body = await request.json()
   const { responses = {}, clientWorkspaceId } = body
   const payload = verification.payload
+  const intakeNotes =
+    typeof responses.notes === "string" ? responses.notes.trim() : ""
+  const hasIntakeNotes = intakeNotes.length > 0
 
   if (payload.kind === "existing_workspace") {
     if (clientWorkspaceId && clientWorkspaceId !== payload.workspaceId) {
@@ -63,8 +66,36 @@ export async function POST(
     const workspaceId = payload.workspaceId!
     const tokenHash = createHash("sha256").update(token).digest("hex")
     // Intake activity should bring an archived client back into active work.
+    const existingWorkspace = await clientWorkspaceRepository.findById(workspaceId)
+    const existingChecklist = normalizeChecklist(existingWorkspace?.taxReturnChecklist)
+    const nextChecklist =
+      hasIntakeNotes && existingChecklist.otherCompleted !== "complete"
+        ? { ...existingChecklist, otherCompleted: "in_progress" as const }
+        : existingChecklist
+
+    const taxYears = parseTaxYears(responses.taxYears)
+    const fullName = typeof responses.fullName === "string" ? responses.fullName.trim() : ""
+    const email = typeof responses.email === "string" ? responses.email.trim() : ""
+    const phone = typeof responses.phone === "string" ? responses.phone.trim() : ""
+    const nextPrimaryContact = {
+      ...(existingWorkspace?.primaryContact ?? {}),
+      ...(fullName ? { name: fullName } : {}),
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
+    }
+    const updatedFromIntake: string[] = []
+    if (fullName) updatedFromIntake.push("name")
+    if (email) updatedFromIntake.push("email")
+    if (phone) updatedFromIntake.push("phone")
+    if (taxYears.length > 0) updatedFromIntake.push("taxYears")
+    if (hasIntakeNotes) updatedFromIntake.push("anythingElse")
+
     await clientWorkspaceRepository.update(workspaceId, {
       status: "active",
+      ...(fullName ? { displayName: fullName } : {}),
+      ...(Object.keys(nextPrimaryContact).length > 0 ? { primaryContact: nextPrimaryContact } : {}),
+      ...(taxYears.length > 0 ? { taxYears } : {}),
+      taxReturnChecklist: nextChecklist,
       lastActivityAt: new Date().toISOString(),
     })
     const intakeResponse = await intakeResponseRepository.create({
@@ -79,6 +110,7 @@ export async function POST(
       metadata: {
         event: "intake_submitted",
         intakeResponseId: intakeResponse.id,
+        updatedFromIntake,
       },
     })
     revalidatePath("/admin/clients")
@@ -107,6 +139,10 @@ export async function POST(
 
   const taxYears = parseTaxYears(responses.taxYears)
   const now = new Date().toISOString()
+  const initialChecklist =
+    hasIntakeNotes
+      ? { ...checklistDefaults, otherCompleted: "in_progress" as const }
+      : checklistDefaults
 
   const workspace = await clientWorkspaceRepository.create({
     displayName: fullName,
@@ -118,7 +154,7 @@ export async function POST(
     },
     taxYears: taxYears.length > 0 ? taxYears : [new Date().getFullYear()],
     tags: [],
-    taxReturnChecklist: checklistDefaults,
+    taxReturnChecklist: initialChecklist,
     lastActivityAt: now,
   })
 

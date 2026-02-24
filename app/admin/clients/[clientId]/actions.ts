@@ -32,24 +32,52 @@ export async function updateClient(input: {
   status: "active" | "inactive"
 }): Promise<ActionResult> {
   try {
+    const existingWorkspace = await clientWorkspaceRepository.findById(input.workspaceId)
+    if (!existingWorkspace) {
+      return { success: false, error: "Client not found" }
+    }
+
+    const nextPrimaryContact = {
+      name: input.name,
+      ...(input.email ? { email: input.email } : {}),
+      ...(input.phone ? { phone: input.phone } : {}),
+    }
+
     const updatedWorkspace = await clientWorkspaceRepository.update(input.workspaceId, {
       displayName: input.name,
       status: input.status,
-      primaryContact: {
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-      },
+      primaryContact: nextPrimaryContact,
       tags: input.tags,
       taxYears: input.taxYears,
     })
     if (!updatedWorkspace) {
       return { success: false, error: "Client not found" }
     }
+
+    const changed: Record<string, { from: string; to: string }> = {}
+    const maybeAddChange = (key: string, fromValue: unknown, toValue: unknown) => {
+      const from = fromValue == null ? "" : JSON.stringify(fromValue)
+      const to = toValue == null ? "" : JSON.stringify(toValue)
+      if (from !== to) {
+        changed[key] = { from, to }
+      }
+    }
+
+    maybeAddChange("displayName", existingWorkspace.displayName, input.name)
+    maybeAddChange("status", existingWorkspace.status, input.status)
+    maybeAddChange("primaryContact.name", existingWorkspace.primaryContact?.name, input.name)
+    maybeAddChange("primaryContact.email", existingWorkspace.primaryContact?.email, input.email)
+    maybeAddChange("primaryContact.phone", existingWorkspace.primaryContact?.phone, input.phone)
+    maybeAddChange("tags", existingWorkspace.tags, input.tags)
+    maybeAddChange("taxYears", existingWorkspace.taxYears, input.taxYears)
+
     await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
       type: "profile_updated",
       title: "Profile updated",
       description: "Client contact details and tax profile updated.",
+      metadata: {
+        changed,
+      },
     })
     return { success: true, data: undefined }
   } catch (error) {
