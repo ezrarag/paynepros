@@ -116,45 +116,45 @@ export function ClientWorkspaceList({
   }
 
   const badgeClassNameByStatus: Record<LifecycleBadgeLabel, string> = {
-    "Waiting on Documents": "bg-slate-100 text-slate-700",
-    Reviewing: "bg-amber-100 text-amber-800",
-    "Ready to File": "bg-blue-100 text-blue-800",
-    Filed: "bg-indigo-100 text-indigo-800",
-    Accepted: "bg-emerald-100 text-emerald-800",
+    "Waiting on Documents": "bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-200",
+    Reviewing: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+    "Ready to File": "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300",
+    Filed: "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300",
+    Accepted: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
   }
 
   const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
     documentsComplete: {
-      container: "bg-slate-100/90 border-slate-200",
-      action: "border-sky-300 text-sky-700",
+      container: "bg-slate-100/90 border-slate-200 dark:bg-slate-900/60 dark:border-slate-700",
+      action: "border-sky-300 text-sky-700 dark:border-sky-700/70 dark:text-sky-300",
     },
     expensesCategorized: {
-      container: "bg-emerald-100/80 border-emerald-200",
-      action: "border-emerald-300 text-emerald-700",
+      container: "bg-emerald-100/80 border-emerald-200 dark:bg-emerald-950/35 dark:border-emerald-800/70",
+      action: "border-emerald-300 text-emerald-700 dark:border-emerald-700/70 dark:text-emerald-300",
     },
     readyForTaxHawk: {
-      container: "bg-blue-100/80 border-blue-200",
-      action: "border-blue-300 text-blue-700",
+      container: "bg-blue-100/80 border-blue-200 dark:bg-blue-950/35 dark:border-blue-800/70",
+      action: "border-blue-300 text-blue-700 dark:border-blue-700/70 dark:text-blue-300",
     },
     incomeReviewed: {
-      container: "bg-violet-100/80 border-violet-200",
-      action: "border-violet-300 text-violet-700",
+      container: "bg-violet-100/80 border-violet-200 dark:bg-violet-950/35 dark:border-violet-800/70",
+      action: "border-violet-300 text-violet-700 dark:border-violet-700/70 dark:text-violet-300",
     },
     bankInfoCollected: {
-      container: "bg-amber-100/80 border-amber-200",
-      action: "border-amber-300 text-amber-700",
+      container: "bg-amber-100/80 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/70",
+      action: "border-amber-300 text-amber-700 dark:border-amber-700/70 dark:text-amber-300",
     },
     otherCompleted: {
-      container: "bg-cyan-100/80 border-cyan-200",
-      action: "border-cyan-300 text-cyan-700",
+      container: "bg-cyan-100/80 border-cyan-200 dark:bg-cyan-950/30 dark:border-cyan-800/70",
+      action: "border-cyan-300 text-cyan-700 dark:border-cyan-700/70 dark:text-cyan-300",
     },
     filed: {
-      container: "bg-indigo-100/80 border-indigo-200",
-      action: "border-indigo-300 text-indigo-700",
+      container: "bg-indigo-100/80 border-indigo-200 dark:bg-indigo-950/35 dark:border-indigo-800/70",
+      action: "border-indigo-300 text-indigo-700 dark:border-indigo-700/70 dark:text-indigo-300",
     },
     accepted: {
-      container: "bg-teal-100/80 border-teal-200",
-      action: "border-teal-300 text-teal-700",
+      container: "bg-teal-100/80 border-teal-200 dark:bg-teal-950/30 dark:border-teal-800/70",
+      action: "border-teal-300 text-teal-700 dark:border-teal-700/70 dark:text-teal-300",
     },
   }
 

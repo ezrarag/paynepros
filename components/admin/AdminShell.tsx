@@ -74,7 +74,7 @@ export function AdminShell({
         {/* Sidebar drawer (all breakpoints) */}
         <aside
           className={cn(
-            "fixed top-14 sm:top-16 left-0 bottom-0 z-50 border-r bg-card",
+            "fixed top-14 sm:top-16 left-0 bottom-0 z-50 border-r bg-card dark:bg-[#161b22] dark:border-[#2a313b]",
             "transform transition-transform duration-200 ease-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}

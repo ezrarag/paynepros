@@ -175,8 +175,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
             ? "justify-center px-2 py-2"
             : "gap-3 px-4 py-2",
           isActive
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-primary text-primary-foreground dark:bg-[#2a313c] dark:text-slate-100"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
         )}
       >
         <Icon className="h-5 w-5 shrink-0" />
@@ -212,7 +212,7 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
         onClick={onNavigate}
         title="Activate Readyaimgo to unlock"
         className={cn(
-          "flex items-center rounded-lg text-sm font-medium text-muted-foreground opacity-70 hover:bg-muted",
+          "flex items-center rounded-lg text-sm font-medium text-muted-foreground opacity-70 hover:bg-muted dark:text-slate-400 dark:hover:bg-[#222a34]",
           isCollapsed
             ? "justify-center px-2 py-2"
             : "gap-3 px-4 py-2"
@@ -256,8 +256,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
         className={cn(
           "flex items-center rounded-lg px-4 py-1.5 text-xs transition-colors",
           isActive
-            ? "bg-primary/10 text-primary font-semibold"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-primary/10 text-primary font-semibold dark:bg-[#232b36] dark:text-slate-200"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
         )}
       >
         {item.label}
@@ -276,8 +276,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
         className={cn(
           "flex items-center rounded-lg px-4 py-1.5 text-xs transition-colors",
           isActive
-            ? "bg-primary/10 text-primary font-semibold"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-primary/10 text-primary font-semibold dark:bg-[#232b36] dark:text-slate-200"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
         )}
       >
         {item.label}
@@ -289,13 +289,13 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
     <TooltipProvider delayDuration={300}>
       <aside
         className={cn(
-          "border-r bg-card min-h-[calc(100vh-64px)] relative transition-all duration-300",
+          "border-r bg-card min-h-[calc(100vh-64px)] relative transition-all duration-300 dark:bg-[#161b22] dark:border-[#2a313b]",
           isCollapsed ? "w-16" : "w-full max-w-[16rem]"
         )}
       >
         <nav className="p-3 sm:p-4 space-y-4">
           {/* Mobile: close button */}
-          <div className="flex items-center justify-between px-2 pb-2 border-b border-border md:hidden">
+          <div className="flex items-center justify-between px-2 pb-2 border-b border-border dark:border-[#2a313b] md:hidden">
             {!isCollapsed && (
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Menu
@@ -305,14 +305,14 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
               type="button"
               onClick={onNavigate}
               aria-label="Close menu"
-              className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-[#222a34] dark:hover:text-slate-100"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Desktop: collapse toggle */}
-          <div className="hidden md:flex items-center justify-between px-2 pb-2 border-b border-border">
+          <div className="hidden md:flex items-center justify-between px-2 pb-2 border-b border-border dark:border-[#2a313b]">
             {!isCollapsed && (
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 PaynePros
@@ -322,7 +322,7 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
               type="button"
               onClick={toggleCollapse}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-[#222a34] dark:hover:text-slate-100"
             >
               {isCollapsed ? (
                 <ChevronRightIcon className="h-4 w-4" />
@@ -366,8 +366,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
               className={cn(
                 "flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors",
                 isReadyaimgoPage
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
+                  ? "bg-primary text-primary-foreground dark:bg-[#2a313c] dark:text-slate-100"
+                  : "text-muted-foreground hover:bg-muted dark:text-slate-400 dark:hover:bg-[#222a34]"
               )}
             >
               {!isCollapsed && (
@@ -377,8 +377,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[10px] font-semibold",
                       hasActiveSubscription
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
                     )}
                   >
                     {hasActiveSubscription ? "Active" : "Locked"}
@@ -405,8 +405,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
                           className={cn(
                             "flex items-center justify-center rounded-lg px-2 py-2 text-sm font-medium transition-colors",
                             pathname === "/admin/readyaimgo" && !lockedModule
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              ? "bg-primary text-primary-foreground dark:bg-[#2a313c] dark:text-slate-100"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
                           )}
                         >
                           <span className="text-xs">O</span>
@@ -424,8 +424,8 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                       pathname === "/admin/readyaimgo" && !lockedModule
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-primary text-primary-foreground dark:bg-[#2a313c] dark:text-slate-100"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
                     )}
                   >
                     Overview
@@ -440,7 +440,7 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
         )}
 
         {/* Theme toggle */}
-        <div className="mt-auto pt-4 border-t">
+        <div className="mt-auto pt-4 border-t border-border dark:border-[#2a313b]">
           {isCollapsed ? (
             <TooltipProvider>
               <Tooltip>
@@ -451,7 +451,7 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
                       const nextTheme: Theme = theme === "light" ? "dark" : theme === "dark" ? "system" : "light"
                       handleThemeChange(nextTheme)
                     }}
-                    className="w-full flex items-center justify-center px-2 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    className="w-full flex items-center justify-center px-2 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-[#222a34] dark:hover:text-slate-100 transition-colors"
                   >
                     {theme === "light" ? (
                       <Sun className="h-5 w-5" />

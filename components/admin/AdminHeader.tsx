@@ -20,14 +20,14 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
   return (
-    <header className="h-14 sm:h-16 border-b bg-card flex items-center justify-between px-3 sm:px-6 gap-2">
+    <header className="h-14 sm:h-16 border-b border-border/80 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 dark:bg-[#12161c] dark:border-[#2a313b] flex items-center justify-between px-3 sm:px-6 gap-2">
       <div className="flex items-center gap-2 min-w-0">
         {onMenuClick && (
           <button
             type="button"
             onClick={onMenuClick}
             aria-label="Open menu"
-            className="p-2 rounded-lg hover:bg-muted text-foreground shrink-0"
+            className="p-2 rounded-lg hover:bg-muted dark:hover:bg-[#1e2631] text-foreground shrink-0"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -37,7 +37,7 @@ export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
       <div className="flex items-center gap-1 sm:gap-4 shrink-0">
         <Link
           href="/admin/security"
-          className="p-2 rounded-md hover:bg-muted transition-colors hidden sm:inline-flex"
+          className="p-2 rounded-md hover:bg-muted dark:hover:bg-[#1e2631] transition-colors hidden sm:inline-flex"
           title="Security Center"
           aria-label="Security Center"
         >

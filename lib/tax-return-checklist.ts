@@ -31,9 +31,9 @@ export const checklistStatusLabels: Record<TaxReturnChecklistStatus, string> = {
 }
 
 export const checklistStatusStyles: Record<TaxReturnChecklistStatus, string> = {
-  not_started: "bg-muted text-muted-foreground",
-  in_progress: "bg-amber-100 text-amber-800",
-  complete: "bg-emerald-100 text-emerald-800",
+  not_started: "bg-muted text-muted-foreground dark:bg-slate-800/70 dark:text-slate-300",
+  in_progress: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  complete: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
 }
 
 export const isChecklistStatus = (value: string): value is TaxReturnChecklistStatus =>
