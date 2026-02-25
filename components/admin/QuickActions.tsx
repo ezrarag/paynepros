@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { UserPlus, Link2, MessageSquare, ClipboardList } from "lucide-react"
+import { UserPlus, Link2, Users, FileText } from "lucide-react"
 import { GenerateIntakeLinkDialog } from "./GenerateIntakeLinkDialog"
 import type { ClientWorkspace } from "@/lib/types/client-workspace"
 
@@ -32,15 +32,15 @@ export function QuickActions({ workspaces }: QuickActionsProps) {
           <span className="text-xs sm:text-sm">Generate Intake Link</span>
         </Button>
         <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2">
-          <Link href="/admin/messaging">
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-xs sm:text-sm">Open Messaging</span>
+          <Link href="/admin/clients">
+            <Users className="h-5 w-5" />
+            <span className="text-xs sm:text-sm">Open Clients</span>
           </Link>
         </Button>
         <Button variant="outline" asChild className="h-auto py-3 sm:py-4 flex flex-col gap-2">
           <Link href="/admin/forms">
-            <ClipboardList className="h-5 w-5" />
-            <span className="text-xs sm:text-sm">Open Forms</span>
+            <FileText className="h-5 w-5" />
+            <span className="text-xs sm:text-sm">Templates</span>
           </Link>
         </Button>
       </div>

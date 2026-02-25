@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { getMileageRate } from "@/lib/mileage-rates"
+import { clientRequestRepository } from "@/lib/repositories/client-request-repository"
+import { getClientRequestTemplate, isDocumentRequestType } from "@/lib/client-requests"
 import {
   checklistItems,
   isChecklistStatus,
@@ -11,6 +13,9 @@ import {
 import type { ChecklistKey } from "@/lib/tax-return-checklist"
 import type {
   TaxReturnChecklist,
+  ClientRequest,
+  ClientRequestType,
+  ClientRequestDelivery,
   EmailFormInput,
   FaxFormInput,
   MailFormInput,
@@ -21,6 +26,32 @@ import type {
 export type ActionResult<T = void> = 
   | { success: true; data: T }
   | { success: false; error: string }
+
+async function maybeCompleteDocumentsChecklist(workspaceId: string) {
+  const requests = await clientRequestRepository.listByWorkspace(workspaceId)
+  const documentRequests = requests.filter((request) => isDocumentRequestType(request.type))
+  if (documentRequests.length === 0) return
+  const hasOpenDocRequest = documentRequests.some((request) => request.status !== "completed")
+  if (hasOpenDocRequest) return
+
+  const workspace = await clientWorkspaceRepository.findById(workspaceId)
+  if (!workspace) return
+  const checklist = normalizeChecklist(workspace.taxReturnChecklist)
+  if (checklist.documentsComplete === "complete") return
+
+  await clientWorkspaceRepository.update(workspaceId, {
+    taxReturnChecklist: {
+      ...checklist,
+      documentsComplete: "complete",
+    },
+    lastActivityAt: new Date().toISOString(),
+  })
+  await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+    type: "tax_return",
+    title: "Documents checklist auto-completed",
+    description: "All open document requests are completed.",
+  })
+}
 
 export async function updateClient(input: {
   workspaceId: string
@@ -135,6 +166,113 @@ export async function updateChecklistStatus(formData: FormData): Promise<ActionR
   } catch (error) {
     console.error("Failed to update checklist status:", error)
     return { success: false, error: "Failed to update checklist. Please try again." }
+  }
+}
+
+export async function createClientRequest(input: {
+  workspaceId: string
+  templateType: ClientRequestType
+  noteFromPreparer?: string
+  delivery: ClientRequestDelivery[]
+  dueAt?: string
+}): Promise<ActionResult<ClientRequest>> {
+  try {
+    const template = getClientRequestTemplate(input.templateType)
+    if (!template) {
+      return { success: false, error: "Invalid request template" }
+    }
+
+    const requestRecord = await clientRequestRepository.create(input.workspaceId, {
+      type: template.type,
+      title: template.title,
+      instructions: template.instructions,
+      noteFromPreparer: input.noteFromPreparer?.trim() || undefined,
+      delivery: input.delivery,
+      status: "sent",
+      dueAt: input.dueAt,
+    })
+
+    await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
+      type: "client_request_sent",
+      title: "Client request sent",
+      description: template.title,
+      metadata: {
+        requestId: requestRecord.id,
+        type: requestRecord.type,
+        delivery: requestRecord.delivery,
+        dueAt: requestRecord.dueAt,
+      },
+    })
+
+    revalidatePath(`/admin/clients/${input.workspaceId}`)
+    revalidatePath("/admin/clients")
+    revalidatePath("/client")
+    return { success: true, data: requestRecord }
+  } catch (error) {
+    console.error("Failed to create client request:", error)
+    return { success: false, error: "Failed to create request. Please try again." }
+  }
+}
+
+export async function markClientRequestComplete(input: {
+  workspaceId: string
+  requestId: string
+}): Promise<ActionResult> {
+  try {
+    const now = new Date().toISOString()
+    const requestRecord = await clientRequestRepository.updateStatus(input.workspaceId, input.requestId, {
+      status: "completed",
+      completedAt: now,
+    })
+    if (!requestRecord) {
+      return { success: false, error: "Request not found" }
+    }
+
+    await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
+      type: "client_request_completed",
+      title: "Client request completed",
+      description: requestRecord.title,
+      metadata: {
+        requestId: requestRecord.id,
+        type: requestRecord.type,
+      },
+    })
+
+    await maybeCompleteDocumentsChecklist(input.workspaceId)
+    revalidatePath(`/admin/clients/${input.workspaceId}`)
+    revalidatePath("/client")
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to mark client request complete:", error)
+    return { success: false, error: "Failed to complete request. Please try again." }
+  }
+}
+
+export async function logClientRequestResent(input: {
+  workspaceId: string
+  requestId: string
+}): Promise<ActionResult> {
+  try {
+    const requestRecord = await clientRequestRepository.findById(input.workspaceId, input.requestId)
+    if (!requestRecord) {
+      return { success: false, error: "Request not found" }
+    }
+
+    await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
+      type: "client_request_sent",
+      title: "Client request resent",
+      description: requestRecord.title,
+      metadata: {
+        requestId: requestRecord.id,
+        type: requestRecord.type,
+        delivery: requestRecord.delivery,
+      },
+    })
+    revalidatePath(`/admin/clients/${input.workspaceId}`)
+    return { success: true, data: undefined }
+  } catch (error) {
+    console.error("Failed to log resend:", error)
+    return { success: false, error: "Failed to resend request. Please try again." }
   }
 }
 

@@ -35,34 +35,30 @@ function renderHero(section: HomeSectionContent) {
         priority
       />
       <div className="absolute inset-0 bg-[#f5f4ef]/83" />
-      <div className={sectionFrame + " relative z-10 grid items-center gap-6 overflow-y-auto lg:grid-cols-[1.15fr_0.85fr]"}>
-        <div className="rounded-xl border border-[#d6d0bf] bg-[#f8f6ef]/94 p-5 sm:p-7">
+      <div className={sectionFrame + " relative z-10 flex items-center overflow-y-auto"}>
+        <div className="w-full rounded-xl border border-[#d6d0bf] bg-[#f8f6ef]/94 p-5 sm:p-7">
           <p className="text-xs tracking-[0.18em] text-[#5d5547]">PAYNE PROFESSIONAL SERVICES</p>
           <h1 className="mt-3 text-[30px] leading-[1.08] tracking-[0.01em] text-[#111111] sm:text-[42px]">
             {section.title}
           </h1>
           <div className="mt-5 max-w-3xl space-y-3">
-            {section.body.slice(0, 2).map((line, index) => (
+            {section.body.slice(0, 3).map((line, index) => (
               <p key={`${section.id}-hero-${index}`} className="text-[15px] leading-[1.55] text-[#4c4639] sm:text-[16px]">
                 {line}
               </p>
             ))}
           </div>
           {(section.ctaPrimaryHref || section.ctaSecondaryHref) && (
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs tracking-[0.16em]">
               {section.ctaPrimaryHref && section.ctaPrimaryLabel && (
-                <Button asChild className="rounded-none bg-[#2f2a22] px-6 py-4 text-xs tracking-[0.14em] text-[#f8f5ef] hover:bg-[#1f1b15]">
-                  <Link href={section.ctaPrimaryHref}>{section.ctaPrimaryLabel}</Link>
-                </Button>
+                <Link href={section.ctaPrimaryHref} className="text-[#2f2a22] underline-offset-4 hover:underline">
+                  {section.ctaPrimaryLabel}
+                </Link>
               )}
               {section.ctaSecondaryHref && section.ctaSecondaryLabel && (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-none border-[#2f2a22] bg-white px-6 py-4 text-xs tracking-[0.14em] text-[#2f2a22] hover:bg-[#2f2a22] hover:text-[#f8f5ef]"
-                >
-                  <Link href={section.ctaSecondaryHref}>{section.ctaSecondaryLabel}</Link>
-                </Button>
+                <Link href={section.ctaSecondaryHref} className="text-[#5d5547] underline-offset-4 hover:text-[#2f2a22] hover:underline">
+                  {section.ctaSecondaryLabel}
+                </Link>
               )}
             </div>
           )}
@@ -74,13 +70,6 @@ function renderHero(section: HomeSectionContent) {
           </div>
         </div>
 
-        <Card className="hidden overflow-hidden border-[#d2ccb8] bg-[#f8f6ef] lg:block">
-          <CardContent className="p-0">
-            <div className="relative h-[420px] w-full">
-              <Image src={safeImageSrc(section.imageSrc)} alt={section.imageAlt} fill className="object-cover" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </section>
   )
@@ -89,31 +78,36 @@ function renderHero(section: HomeSectionContent) {
 function renderSplit(section: HomeSectionContent) {
   return (
     <section className={`${sectionShell} bg-[#efefee]`}>
-      <div className={sectionFrame + " grid items-center gap-8 overflow-y-auto lg:grid-cols-[1.05fr_1fr]"}>
-        <div>
-          <h2 className="wix-heading text-[34px] leading-none tracking-[0.02em] text-[#111111] sm:text-[48px]">{section.title}</h2>
-          <div className="mt-4 h-[3px] w-[160px] bg-[#a8a37f]" />
-          <div className="mt-2 h-[1px] w-[160px] bg-[#bdb89d]" />
-          {section.subtitle ? <p className="mt-5 text-[16px] tracking-[0.06em] text-[#5e5a4d]">{section.subtitle}</p> : null}
+      <div className={sectionFrame + " grid items-center gap-6 overflow-y-auto lg:grid-cols-[1fr_1fr]"}>
+        <div className="rounded-xl border border-[#d2ccb8] bg-[#f8f6ef] p-5 sm:p-7">
+          <p className="text-xs tracking-[0.18em] text-[#5d5547]">ABOUT OUR TEAM</p>
+          <h2 className="mt-2 text-[30px] leading-none tracking-[0.01em] text-[#151515] sm:text-[40px]">
+            {section.title}
+          </h2>
+          <div className="mt-3 h-[4px] w-[220px] bg-[#a8a37f]" />
+          <div className="mt-2 h-[1px] w-[220px] bg-[#bdb89d]" />
+          {section.subtitle ? <p className="mt-4 text-[15px] leading-[1.5] text-[#4c4639]">{section.subtitle}</p> : null}
           {section.bullets.length > 0 ? (
-            <ul className="mt-8 space-y-4 text-[17px] leading-[1.4] text-[#202020] sm:text-[20px]">
+            <div className="mt-5 grid gap-3">
               {section.bullets.map((bullet, index) => (
-                <li key={`${section.id}-bullet-${index}`} className="list-disc">
+                <div key={`${section.id}-bullet-${index}`} className="border border-[#dcd6c5] bg-[#fffdf7] px-3 py-2 text-[14px] leading-[1.45] text-[#2f2a22]">
                   {bullet}
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <div className="mt-8 space-y-4 text-[17px] leading-[1.45] text-[#202020] sm:text-[20px]">
+            <div className="mt-5 space-y-3">
               {section.body.map((line, index) => (
-                <p key={`${section.id}-line-${index}`}>{line}</p>
+                <p key={`${section.id}-line-${index}`} className="text-[15px] leading-[1.5] text-[#4c4639]">
+                  {line}
+                </p>
               ))}
             </div>
           )}
         </div>
-        <Card className="overflow-hidden rounded-[36px] border-[#d6d0c0]">
+        <Card className="overflow-hidden border-[#d2ccb8] bg-[#f8f6ef]">
           <CardContent className="p-0">
-            <div className="relative h-[320px] w-full sm:h-[420px]">
+            <div className="relative h-[280px] w-full sm:h-[360px] lg:h-[430px]">
               <Image src={safeImageSrc(section.imageSrc)} alt={section.imageAlt} fill className="object-cover" />
             </div>
           </CardContent>

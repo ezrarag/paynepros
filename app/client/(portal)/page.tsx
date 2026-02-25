@@ -3,14 +3,18 @@ import { requireClientPortalSession } from "@/lib/client-portal-session"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { BeamRequestsPanel } from "@/components/client/BeamRequestsPanel"
+import { getClientRequestTemplate, isDocumentRequestType } from "@/lib/client-requests"
 import {
   checklistItems,
   checklistStatusLabels,
   normalizeChecklist,
   getLifecycleBadgeLabel,
 } from "@/lib/tax-return-checklist"
-import { updateClientChecklistStatus, clientSignOut } from "./actions"
+import {
+  updateClientChecklistStatus,
+  clientSignOut,
+  completeClientRequest,
+} from "./actions"
 
 const statusStyles = {
   not_started: "bg-muted text-muted-foreground",
@@ -27,6 +31,9 @@ export default async function ClientPortalPage() {
   const { intakeResponseRepository } = await import(
     "@/lib/repositories/intake-response-repository"
   )
+  const { clientRequestRepository } = await import(
+    "@/lib/repositories/client-request-repository"
+  )
 
   const workspace = await clientWorkspaceRepository.findById(clientUser.workspaceId)
   if (!workspace) {
@@ -36,6 +43,29 @@ export default async function ClientPortalPage() {
   const checklist = normalizeChecklist(workspace.taxReturnChecklist)
   const timeline = await clientWorkspaceRepository.getTimeline(workspace.id, 8)
   const latestIntake = await intakeResponseRepository.findLatest(workspace.id)
+  const allClientRequests = await clientRequestRepository.listByWorkspace(workspace.id)
+  const openClientRequests = allClientRequests.filter((request) => request.status !== "completed")
+  const unviewedRequests = openClientRequests
+    .filter((request) => !request.viewedAt)
+  if (unviewedRequests.length > 0) {
+    const viewedAt = new Date().toISOString()
+    for (const request of unviewedRequests) {
+      const updated = await clientRequestRepository.updateStatus(workspace.id, request.id, {
+        status: "viewed",
+        viewedAt,
+      })
+      if (!updated) continue
+      await clientWorkspaceRepository.appendTimelineEvent(workspace.id, {
+        type: "client_request_viewed",
+        title: "Client request viewed",
+        description: request.title,
+        metadata: {
+          requestId: request.id,
+          type: request.type,
+        },
+      })
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8 space-y-6">
@@ -125,7 +155,57 @@ export default async function ClientPortalPage() {
         </CardContent>
       </Card>
 
-      <BeamRequestsPanel />
+      <Card>
+        <CardHeader>
+          <CardTitle>Requested Items</CardTitle>
+          <CardDescription>Action items from your preparer.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {openClientRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No open requests right now.</p>
+          ) : (
+            <ul className="space-y-3">
+              {openClientRequests.map((request) => {
+                const template = getClientRequestTemplate(request.type)
+                const isDocRequest = isDocumentRequestType(request.type)
+                return (
+                  <li key={request.id} className="rounded-lg border p-3">
+                    <div className="text-sm font-medium">{request.title}</div>
+                    <div className="text-sm text-muted-foreground mt-1">{request.instructions}</div>
+                    {request.noteFromPreparer ? (
+                      <div className="text-sm mt-2">
+                        <span className="text-muted-foreground">Note:</span>{" "}
+                        {request.noteFromPreparer}
+                      </div>
+                    ) : null}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>Status: {request.status.replace("_", " ")}</span>
+                      {request.dueAt ? (
+                        <span>
+                          Due{" "}
+                          {new Date(request.dueAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      ) : null}
+                      <span>{template?.completionMode === "confirm_info" ? "Confirm info" : "Document upload"}</span>
+                    </div>
+                    <form action={completeClientRequest} className="mt-3">
+                      <input type="hidden" name="workspaceId" value={workspace.id} />
+                      <input type="hidden" name="requestId" value={request.id} />
+                      <Button type="submit" variant="outline">
+                        {isDocRequest ? "I uploaded this document" : "Mark info confirmed"}
+                      </Button>
+                    </form>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { copyText } from "@/lib/utils"
 
 const EXPIRY_OPTIONS = [
   { value: 24, label: "24 hours" },
@@ -47,11 +48,13 @@ export function NewClientIntakeLinkButton() {
     }
   }
 
-  const copyLink = () => {
+  const copyLink = async () => {
     if (!url) return
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    const didCopy = await copyText(url)
+    setCopied(didCopy)
+    if (didCopy) {
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   const close = () => {

@@ -14,6 +14,9 @@ export type TimelineEventType =
   | "form_faxed"
   | "form_mailed"
   | "calculation_updated"
+  | "client_request_sent"
+  | "client_request_viewed"
+  | "client_request_completed"
 export type TaskStatus = "pending" | "in_review" | "completed"
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "refunded"
 export type TaxReturnChecklistStatus = "not_started" | "in_progress" | "complete"
@@ -197,4 +200,32 @@ export interface ScheduleCCalculation {
 export interface WorkspaceCalculations {
   mileage?: MileageCalculation
   scheduleC?: ScheduleCCalculation
+}
+
+export type ClientRequestType =
+  | "w2"
+  | "1099"
+  | "id"
+  | "bank_statements"
+  | "mileage"
+  | "schedule_c_expenses"
+  | "engagement_consent"
+  | "confirm_info"
+
+export type ClientRequestDelivery = "email" | "sms"
+export type ClientRequestStatus = "sent" | "viewed" | "completed"
+
+export interface ClientRequest {
+  id: string
+  workspaceId: string
+  type: ClientRequestType
+  title: string
+  instructions: string
+  noteFromPreparer?: string
+  delivery: ClientRequestDelivery[]
+  status: ClientRequestStatus
+  sentAt: string
+  viewedAt?: string
+  completedAt?: string
+  dueAt?: string
 }

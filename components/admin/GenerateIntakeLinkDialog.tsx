@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Link2, Search, Copy, Check, UserPlus } from "lucide-react"
 import type { ClientWorkspace } from "@/lib/types/client-workspace"
+import { copyText } from "@/lib/utils"
 
 interface GenerateIntakeLinkDialogProps {
   open: boolean
@@ -88,12 +89,10 @@ export function GenerateIntakeLinkDialog({
       onLinkGenerated?.(data.url, workspace?.displayName || "Client")
       
       // Auto-copy to clipboard
-      try {
-        await navigator.clipboard.writeText(data.url)
+      const didCopy = await copyText(data.url)
+      if (didCopy) {
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
-      } catch (err) {
-        console.error("Failed to copy to clipboard:", err)
       }
     } catch (error) {
       console.error("Error creating intake link:", error)
@@ -105,12 +104,10 @@ export function GenerateIntakeLinkDialog({
 
   const handleCopyLink = async () => {
     if (!generatedLink) return
-    try {
-      await navigator.clipboard.writeText(generatedLink)
+    const didCopy = await copyText(generatedLink)
+    if (didCopy) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error("Failed to copy:", err)
     }
   }
 

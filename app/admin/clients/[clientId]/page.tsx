@@ -11,6 +11,9 @@ import {
   mailForm,
   saveMileageCalculation,
   saveScheduleCCalculation,
+  createClientRequest,
+  markClientRequestComplete,
+  logClientRequestResent,
 } from "./actions"
 import { deleteClient } from "../actions"
 
@@ -26,6 +29,9 @@ export default async function ClientWorkspacePage({
   const { intakeResponseRepository } = await import(
     "@/lib/repositories/intake-response-repository"
   )
+  const { clientRequestRepository } = await import(
+    "@/lib/repositories/client-request-repository"
+  )
   const workspace = await clientWorkspaceRepository.findById(clientId)
   const timeline = workspace
     ? await clientWorkspaceRepository.getTimeline(clientId)
@@ -33,6 +39,9 @@ export default async function ClientWorkspacePage({
   const latestIntake = workspace
     ? await intakeResponseRepository.findLatest(clientId)
     : null
+  const clientRequests = workspace
+    ? await clientRequestRepository.listByWorkspace(clientId)
+    : []
 
   if (!workspace) {
     return (
@@ -55,8 +64,12 @@ export default async function ClientWorkspacePage({
       workspace={workspace}
       timeline={timeline}
       latestIntake={latestIntake}
+      clientRequests={clientRequests}
       updateClient={updateClient}
       updateChecklistStatus={updateChecklistStatus}
+      createClientRequest={createClientRequest}
+      markClientRequestComplete={markClientRequestComplete}
+      logClientRequestResent={logClientRequestResent}
       uploadClientForm={uploadClientForm}
       emailForm={emailForm}
       faxForm={faxForm}

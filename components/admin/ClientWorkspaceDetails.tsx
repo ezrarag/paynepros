@@ -21,6 +21,9 @@ import {
   ClientWorkspace,
   IntakeResponse,
   TimelineEvent,
+  ClientRequest,
+  ClientRequestType,
+  ClientRequestDelivery,
   FormSendRecord,
   EmailFormInput,
   FaxFormInput,
@@ -33,6 +36,11 @@ import {
   checklistItems,
   normalizeChecklist,
 } from "@/lib/tax-return-checklist"
+import {
+  CLIENT_REQUEST_TEMPLATES,
+  getClientRequestTemplate,
+  isDocumentRequestType,
+} from "@/lib/client-requests"
 import type { ChecklistKey } from "@/lib/tax-return-checklist"
 
 const TAG_OPTIONS = ["tax", "bookkeeping", "payroll", "cleanup"] as const
@@ -106,8 +114,24 @@ interface ClientWorkspaceDetailsProps {
   workspace: ClientWorkspace
   timeline: TimelineEvent[]
   latestIntake?: IntakeResponse | null
+  clientRequests: ClientRequest[]
   updateClient: (input: UpdateClientInput) => Promise<ActionResult>
   updateChecklistStatus: (formData: FormData) => Promise<ActionResult>
+  createClientRequest: (input: {
+    workspaceId: string
+    templateType: ClientRequestType
+    noteFromPreparer?: string
+    delivery: ClientRequestDelivery[]
+    dueAt?: string
+  }) => Promise<ActionResult<ClientRequest>>
+  markClientRequestComplete: (input: {
+    workspaceId: string
+    requestId: string
+  }) => Promise<ActionResult>
+  logClientRequestResent: (input: {
+    workspaceId: string
+    requestId: string
+  }) => Promise<ActionResult>
   uploadClientForm: (input: { workspaceId: string; formName: string }) => Promise<ActionResult>
   emailForm: (input: EmailFormInput) => Promise<ActionResult>
   faxForm: (input: FaxFormInput) => Promise<ActionResult>
@@ -121,8 +145,12 @@ export function ClientWorkspaceDetails({
   workspace,
   timeline,
   latestIntake,
+  clientRequests,
   updateClient,
   updateChecklistStatus,
+  createClientRequest,
+  markClientRequestComplete,
+  logClientRequestResent,
   uploadClientForm,
   emailForm,
   faxForm,
@@ -226,6 +254,11 @@ export function ClientWorkspaceDetails({
   const [mailZip, setMailZip] = useState("")
   const [mailNote, setMailNote] = useState("")
   const [expandedTimelineEventId, setExpandedTimelineEventId] = useState<string | null>(null)
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [requestTemplateType, setRequestTemplateType] = useState<ClientRequestType>("w2")
+  const [requestNote, setRequestNote] = useState("")
+  const [requestDueAt, setRequestDueAt] = useState("")
+  const [requestSendEmail, setRequestSendEmail] = useState(true)
   const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
     documentsComplete: {
       container: "bg-slate-100/90 border-slate-200 dark:bg-slate-900/60 dark:border-slate-700",
@@ -297,6 +330,15 @@ export function ClientWorkspaceDetails({
     currentRole === "student"
       ? clientForms.filter((form) => !form.sensitive)
       : clientForms
+  const sortedClientRequests = [...clientRequests].sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+  )
+
+  const requestStatusStyles: Record<ClientRequest["status"], string> = {
+    sent: "bg-amber-100 text-amber-800",
+    viewed: "bg-blue-100 text-blue-800",
+    completed: "bg-emerald-100 text-emerald-800",
+  }
 
   useEffect(() => {
     if (!editOpen) return
@@ -575,6 +617,86 @@ export function ClientWorkspaceDetails({
     }
   }
 
+  const sendClientRequest = () => {
+    setError(null)
+    const delivery: ClientRequestDelivery[] = requestSendEmail ? ["email"] : []
+    if (delivery.length === 0) {
+      setError("Choose at least one delivery method.")
+      return
+    }
+
+    startTransition(async () => {
+      const result = await createClientRequest({
+        workspaceId: workspace.id,
+        templateType: requestTemplateType,
+        noteFromPreparer: requestNote.trim() || undefined,
+        delivery,
+        dueAt: requestDueAt || undefined,
+      })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+
+      if (delivery.includes("email")) {
+        const sendResponse = await fetch("/api/client-requests/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workspaceId: workspace.id,
+            requestId: result.data.id,
+          }),
+        })
+        if (!sendResponse.ok) {
+          setError("Request saved, but email delivery failed.")
+        }
+      }
+
+      setRequestModalOpen(false)
+      setRequestTemplateType("w2")
+      setRequestNote("")
+      setRequestDueAt("")
+      setRequestSendEmail(true)
+      router.refresh()
+    })
+  }
+
+  const resendClientRequest = (requestId: string) => {
+    setError(null)
+    startTransition(async () => {
+      const sendResponse = await fetch("/api/client-requests/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId: workspace.id,
+          requestId,
+        }),
+      })
+      if (!sendResponse.ok) {
+        setError("Failed to resend request email.")
+        return
+      }
+      const logResult = await logClientRequestResent({ workspaceId: workspace.id, requestId })
+      if (!logResult.success) {
+        setError(logResult.error)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  const completeClientRequestAction = (requestId: string) => {
+    setError(null)
+    startTransition(async () => {
+      const result = await markClientRequestComplete({ workspaceId: workspace.id, requestId })
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -626,6 +748,7 @@ export function ClientWorkspaceDetails({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex flex-wrap gap-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="requests">Requests</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -777,6 +900,95 @@ export function ClientWorkspaceDetails({
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle>Client Requests</CardTitle>
+                <CardDescription>
+                  Send template-based requests and track completion.
+                </CardDescription>
+              </div>
+              <Button onClick={() => setRequestModalOpen(true)}>Request docs</Button>
+            </CardHeader>
+            <CardContent>
+              {sortedClientRequests.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No requests sent yet.</div>
+              ) : (
+                <div className="space-y-3">
+                  {sortedClientRequests.map((request) => {
+                    const template = getClientRequestTemplate(request.type)
+                    return (
+                      <div key={request.id} className="rounded-lg border p-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="font-medium">{request.title}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {request.instructions}
+                            </div>
+                            {request.noteFromPreparer && (
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">Note:</span>{" "}
+                                {request.noteFromPreparer}
+                              </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span>
+                                Sent{" "}
+                                {new Date(request.sentAt).toLocaleString(undefined, {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {request.dueAt && (
+                                <span>
+                                  Due{" "}
+                                  {new Date(request.dueAt).toLocaleDateString(undefined, {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              )}
+                              <span>{template?.completionMode === "confirm_info" ? "Confirm info" : "Document upload"}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs ${requestStatusStyles[request.status]}`}
+                            >
+                              {request.status}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isPending || !request.delivery.includes("email")}
+                              onClick={() => resendClientRequest(request.id)}
+                            >
+                              Resend
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isPending || request.status === "completed"}
+                              onClick={() => completeClientRequestAction(request.id)}
+                            >
+                              Mark complete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1408,6 +1620,99 @@ export function ClientWorkspaceDetails({
                 </Button>
                 <Button onClick={submitEdit} disabled={!name.trim() || isPending}>
                   Save changes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {requestModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setRequestModalOpen(false)}
+        >
+          <Card className="w-full max-w-xl" onClick={(event) => event.stopPropagation()}>
+            <CardHeader>
+              <CardTitle>Request docs</CardTitle>
+              <CardDescription>
+                Create and send a structured request to this client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="request-template">Template</Label>
+                <Select
+                  value={requestTemplateType}
+                  onValueChange={(value) => setRequestTemplateType(value as ClientRequestType)}
+                >
+                  <SelectTrigger id="request-template">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CLIENT_REQUEST_TEMPLATES.map((template) => (
+                      <SelectItem key={template.type} value={template.type}>
+                        {template.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="text-xs text-muted-foreground">
+                  {getClientRequestTemplate(requestTemplateType)?.instructions}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="request-note">Optional note</Label>
+                <Textarea
+                  id="request-note"
+                  placeholder="Add prep-specific context..."
+                  value={requestNote}
+                  onChange={(event) => setRequestNote(event.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="request-due-date">Due date (optional)</Label>
+                <Input
+                  id="request-due-date"
+                  type="date"
+                  value={requestDueAt}
+                  onChange={(event) => setRequestDueAt(event.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Delivery method</Label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={requestSendEmail}
+                    onChange={(event) => setRequestSendEmail(event.target.checked)}
+                    className="h-4 w-4 rounded border-muted"
+                  />
+                  Email (Resend)
+                </label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input type="checkbox" checked={false} disabled className="h-4 w-4 rounded border-muted" />
+                  SMS (coming soon)
+                </label>
+              </div>
+
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                CTA for client:{" "}
+                {isDocumentRequestType(requestTemplateType)
+                  ? "Upload document and mark request complete."
+                  : "Confirm information and mark request complete."}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setRequestModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={sendClientRequest} disabled={isPending}>
+                  {isPending ? "Sending..." : "Send"}
                 </Button>
               </div>
             </CardContent>

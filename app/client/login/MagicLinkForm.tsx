@@ -4,16 +4,22 @@ import { useActionState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  initialState,
-  requestClientMagicLink,
-  type RequestMagicLinkState,
-} from "./actions"
+import { requestClientMagicLink } from "./actions"
+
+type RequestMagicLinkState = {
+  status: "idle" | "success" | "error"
+  message?: string
+  magicLink?: string
+}
+
+const initialRequestMagicLinkState: RequestMagicLinkState = {
+  status: "idle",
+}
 
 export default function MagicLinkForm() {
   const [state, formAction, isPending] = useActionState<RequestMagicLinkState, FormData>(
     requestClientMagicLink,
-    initialState
+    initialRequestMagicLinkState
   )
 
   return (

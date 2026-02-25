@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CreateIntakeLinkButton } from "@/components/admin/CreateIntakeLinkButton"
 import { NewClientIntakeLinkButton } from "@/components/admin/NewClientIntakeLinkButton"
+import { copyText } from "@/lib/utils"
 import {
   checklistItems,
   getLifecycleBadgeLabel,
@@ -175,6 +176,13 @@ export function OpenClientChecklistList({
     })
   }
 
+  const handleCopyGeneratedLink = async (url: string) => {
+    const didCopy = await copyText(url)
+    if (!didCopy) {
+      setError("Could not copy automatically on this device. Long-press the link and copy it manually.")
+    }
+  }
+
   const completeChecklistItem = (workspace: ClientWorkspace, itemKey: ChecklistKey) => {
     const nextStatus: TaxReturnChecklistStatus = "complete"
     const currentChecklist = getChecklistForWorkspace(workspace)
@@ -288,7 +296,7 @@ export function OpenClientChecklistList({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => navigator.clipboard.writeText(link.url)}
+                      onClick={() => handleCopyGeneratedLink(link.url)}
                     >
                       Copy
                     </Button>
