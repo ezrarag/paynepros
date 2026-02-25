@@ -6,7 +6,14 @@ import { intakeLinkRepository } from "@/lib/repositories/intake-link-repository"
 import { intakeSteps } from "@/lib/intake/steps"
 import { verifyIntakeLinkToken } from "@/lib/intake/link-token"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
-import { checklistDefaults, normalizeChecklist } from "@/lib/tax-return-checklist"
+import {
+  checklistDefaults,
+  checklistItems,
+  isChecklistStatus,
+  normalizeChecklist,
+  type ChecklistKey,
+} from "@/lib/tax-return-checklist"
+import type { TaxReturnChecklistStatus } from "@/lib/types/client-workspace"
 
 function parseTaxYears(value: unknown): number[] {
   if (Array.isArray(value)) {
@@ -17,6 +24,17 @@ function parseTaxYears(value: unknown): number[] {
     return Number.isNaN(n) ? [] : [n]
   }
   return []
+}
+
+function sanitizeChecklistUpdates(input: unknown) {
+  const source = input && typeof input === "object" ? (input as Record<string, unknown>) : {}
+  return checklistItems.reduce<Partial<Record<ChecklistKey, TaxReturnChecklistStatus>>>((acc, item) => {
+    const rawStatus = source[item.key]
+    if (typeof rawStatus === "string" && isChecklistStatus(rawStatus)) {
+      acc[item.key] = rawStatus
+    }
+    return acc
+  }, {})
 }
 
 export async function GET(
@@ -31,10 +49,25 @@ export async function GET(
   if (verification.status !== "valid") {
     return NextResponse.json({ error: "Link not found" }, { status: 404 })
   }
+
+  const workspaceId = verification.payload.workspaceId ?? null
+  let prefill: Record<string, string> = {}
+  let checklistStatuses: Partial<Record<ChecklistKey, TaxReturnChecklistStatus>> = {}
+  if (verification.payload.kind === "existing_workspace" && workspaceId) {
+    const workspace = await clientWorkspaceRepository.findById(workspaceId)
+    const fullName = workspace?.primaryContact?.name || workspace?.displayName
+    if (fullName) {
+      prefill = { fullName }
+    }
+    checklistStatuses = normalizeChecklist(workspace?.taxReturnChecklist)
+  }
+
   return NextResponse.json({
     valid: true,
     kind: verification.payload.kind,
-    clientWorkspaceId: verification.payload.workspaceId ?? null,
+    clientWorkspaceId: workspaceId,
+    prefill,
+    checklistStatuses,
     steps: intakeSteps,
   })
 }
@@ -53,7 +86,7 @@ export async function POST(
   }
 
   const body = await request.json()
-  const { responses = {}, clientWorkspaceId } = body
+  const { responses = {}, checklistUpdates = {}, clientWorkspaceId } = body
   const payload = verification.payload
   const intakeNotes =
     typeof responses.notes === "string" ? responses.notes.trim() : ""
@@ -68,10 +101,18 @@ export async function POST(
     // Intake activity should bring an archived client back into active work.
     const existingWorkspace = await clientWorkspaceRepository.findById(workspaceId)
     const existingChecklist = normalizeChecklist(existingWorkspace?.taxReturnChecklist)
-    const nextChecklist =
-      hasIntakeNotes && existingChecklist.otherCompleted !== "complete"
-        ? { ...existingChecklist, otherCompleted: "in_progress" as const }
-        : existingChecklist
+    const validatedChecklistUpdates = sanitizeChecklistUpdates(checklistUpdates)
+    const hasExplicitOtherCompletedUpdate =
+      typeof validatedChecklistUpdates.otherCompleted === "string"
+    const nextChecklist = {
+      ...existingChecklist,
+      ...validatedChecklistUpdates,
+      ...(!hasExplicitOtherCompletedUpdate &&
+      hasIntakeNotes &&
+      existingChecklist.otherCompleted !== "complete"
+        ? { otherCompleted: "in_progress" as const }
+        : {}),
+    }
 
     const taxYears = parseTaxYears(responses.taxYears)
     const fullName = typeof responses.fullName === "string" ? responses.fullName.trim() : ""
@@ -89,6 +130,9 @@ export async function POST(
     if (phone) updatedFromIntake.push("phone")
     if (taxYears.length > 0) updatedFromIntake.push("taxYears")
     if (hasIntakeNotes) updatedFromIntake.push("anythingElse")
+    if (Object.keys(validatedChecklistUpdates).length > 0) {
+      updatedFromIntake.push("checklist")
+    }
 
     await clientWorkspaceRepository.update(workspaceId, {
       status: "active",
@@ -101,7 +145,10 @@ export async function POST(
     const intakeResponse = await intakeResponseRepository.create({
       clientWorkspaceId: workspaceId,
       intakeLinkId: tokenHash,
-      responses,
+      responses: {
+        ...responses,
+        checklistUpdates: validatedChecklistUpdates,
+      },
     })
     await clientWorkspaceRepository.addTimelineEvent(workspaceId, {
       type: "intake",
@@ -114,6 +161,7 @@ export async function POST(
       },
     })
     revalidatePath("/admin/clients")
+    revalidatePath("/admin/checklists")
     revalidatePath("/admin")
     revalidatePath(`/admin/clients/${workspaceId}`)
     return NextResponse.json({ intakeResponse })
@@ -122,19 +170,9 @@ export async function POST(
   // new_client: validate required fields, create workspace, then response and timeline
   const fullName = typeof responses.fullName === "string" ? responses.fullName.trim() : ""
   const email = typeof responses.email === "string" ? responses.email.trim() : ""
-  const address = typeof responses.address === "string" ? responses.address.trim() : ""
   const phone = typeof responses.phone === "string" ? responses.phone.trim() : ""
   if (!fullName) {
     return NextResponse.json({ error: "Full name is required" }, { status: 400 })
-  }
-  if (!address) {
-    return NextResponse.json({ error: "Address is required" }, { status: 400 })
-  }
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 })
-  }
-  if (!phone) {
-    return NextResponse.json({ error: "Phone number is required" }, { status: 400 })
   }
 
   const taxYears = parseTaxYears(responses.taxYears)
@@ -149,8 +187,8 @@ export async function POST(
     status: "active",
     primaryContact: {
       name: fullName,
-      email,
-      phone,
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
     },
     taxYears: taxYears.length > 0 ? taxYears : [new Date().getFullYear()],
     tags: [],
@@ -175,6 +213,7 @@ export async function POST(
     },
   })
   revalidatePath("/admin/clients")
+  revalidatePath("/admin/checklists")
   revalidatePath("/admin")
   revalidatePath(`/admin/clients/${workspace.id}`)
 
@@ -187,4 +226,51 @@ export async function POST(
   }
 
   return NextResponse.json({ intakeResponse, workspaceId: workspace.id })
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params
+  const verification = verifyIntakeLinkToken(token)
+  if (verification.status === "expired") {
+    return NextResponse.json({ error: "Link has expired" }, { status: 410 })
+  }
+  if (verification.status !== "valid") {
+    return NextResponse.json({ error: "Link not found" }, { status: 404 })
+  }
+  if (verification.payload.kind !== "existing_workspace" || !verification.payload.workspaceId) {
+    return NextResponse.json({ error: "Checklist updates require an existing client link" }, { status: 400 })
+  }
+
+  const body = await request.json()
+  const updates = sanitizeChecklistUpdates(body?.checklistUpdates)
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No checklist updates provided" }, { status: 400 })
+  }
+
+  const workspaceId = verification.payload.workspaceId
+  const workspace = await clientWorkspaceRepository.findById(workspaceId)
+  if (!workspace) {
+    return NextResponse.json({ error: "Workspace not found" }, { status: 404 })
+  }
+
+  const nextChecklist = {
+    ...normalizeChecklist(workspace.taxReturnChecklist),
+    ...updates,
+  }
+
+  await clientWorkspaceRepository.update(workspaceId, {
+    status: "active",
+    taxReturnChecklist: nextChecklist,
+    lastActivityAt: new Date().toISOString(),
+  })
+
+  revalidatePath("/admin/clients")
+  revalidatePath("/admin/checklists")
+  revalidatePath("/admin")
+  revalidatePath(`/admin/clients/${workspaceId}`)
+
+  return NextResponse.json({ success: true })
 }

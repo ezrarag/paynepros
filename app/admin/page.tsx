@@ -75,7 +75,7 @@ export default async function AdminDashboard() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild>
-              <Link href="/admin/clients">Open Client Checklists</Link>
+              <Link href="/admin/checklists">Open Client Checklists</Link>
             </Button>
           </div>
         </CardContent>

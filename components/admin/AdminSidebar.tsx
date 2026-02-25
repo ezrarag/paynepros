@@ -52,8 +52,9 @@ const payneProsItems = [
 ]
 
 const clientSubItems = [
-  { href: "/admin/clients", label: "Client Workspaces", listMode: "active" },
-  { href: "/admin/clients?list=completed", label: "Completed / Archive", listMode: "completed" },
+  { href: "/admin/clients", label: "Client Directory", view: "directory" },
+  { href: "/admin/checklists", label: "Open Checklists", view: "checklists" },
+  { href: "/admin/clients?list=completed", label: "Completed / Archive", view: "completed" },
 ] as const
 
 const dashboardSubItems = [
@@ -162,7 +163,10 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
   const renderLink = (item: { href: string; label: string; icon: LucideIcon }) => {
     const Icon = item.icon
     const isActive =
-      pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))
+      pathname === item.href ||
+      (item.href !== "/admin" &&
+        (pathname.startsWith(item.href) ||
+          (item.href === "/admin/clients" && pathname.startsWith("/admin/checklists"))))
 
     const linkContent = (
       <Link
@@ -266,8 +270,10 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
   }
 
   const renderClientSubLink = (item: (typeof clientSubItems)[number]) => {
-    const isClientsPage = pathname === "/admin/clients"
-    const isActive = isClientsPage && clientListMode === item.listMode
+    const isActive =
+      (item.view === "checklists" && pathname === "/admin/checklists") ||
+      (item.view === "directory" && pathname === "/admin/clients" && clientListMode === "active") ||
+      (item.view === "completed" && pathname === "/admin/clients" && clientListMode === "completed")
     return (
       <Link
         key={item.href}

@@ -16,37 +16,23 @@ export interface IntakeStep {
   fields: IntakeStepField[]
 }
 
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: 7 }, (_, index) => String(currentYear - index))
+
 export const intakeSteps: IntakeStep[] = [
   {
     id: "contact",
-    title: "Contact Info",
-    description: "Share your basic contact details.",
+    title: "Intake",
+    description: "Share your name, year, and anything else.",
     fields: [
       { id: "fullName", label: "Name", type: "text", required: true },
-      { id: "address", label: "Address", type: "text", required: true },
-      { id: "email", label: "Email address", type: "email", required: true },
-      { id: "phone", label: "Phone number", type: "tel", required: true },
-    ],
-  },
-  {
-    id: "tax_year",
-    title: "Year",
-    description: "Tell us which tax year this intake is for.",
-    fields: [
       {
         id: "taxYears",
         label: "Year",
         type: "select",
-        options: ["2020","2021","2022", "2023", "2024", "2025"],
+        options: yearOptions,
         required: true,
       },
-    ],
-  },
-  {
-    id: "consent",
-    title: "Anything Else",
-    description: "Share anything else you'd like us to know.",
-    fields: [
       {
         id: "notes",
         label: "Anything else?",

@@ -1,16 +1,20 @@
-import { Suspense } from "react"
-import ClientLoginClient from "./ClientLoginClient"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import MagicLinkForm from "./MagicLinkForm"
 
-export default async function ClientLoginPage() {
+export default function ClientLoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-          <div className="w-full max-w-md h-96 rounded-lg border bg-card animate-pulse" />
-        </div>
-      }
-    >
-      <ClientLoginClient />
-    </Suspense>
+    <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 px-4 py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Client Portal</CardTitle>
+          <CardDescription>
+            Enter your client email and we will generate a one-time sign-in link.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <MagicLinkForm />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

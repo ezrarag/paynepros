@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { requireClientAuth } from "@/lib/auth"
+import { requireClientPortalSession } from "@/lib/client-portal-session"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ const statusStyles = {
 } as const
 
 export default async function ClientPortalPage() {
-  const clientUser = await requireClientAuth()
+  const clientUser = await requireClientPortalSession()
 
   const { clientWorkspaceRepository } = await import(
     "@/lib/repositories/client-workspace-repository"
@@ -28,7 +28,7 @@ export default async function ClientPortalPage() {
     "@/lib/repositories/intake-response-repository"
   )
 
-  const workspace = await clientWorkspaceRepository.findById(clientUser.clientWorkspaceId)
+  const workspace = await clientWorkspaceRepository.findById(clientUser.workspaceId)
   if (!workspace) {
     redirect("/client/login")
   }
@@ -42,7 +42,7 @@ export default async function ClientPortalPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold">{workspace.displayName}</h1>
-          <p className="text-sm text-muted-foreground">Signed in as {clientUser.email ?? "client"}</p>
+          <p className="text-sm text-muted-foreground">Signed in as {clientUser.email}</p>
         </div>
         <form action={clientSignOut}>
           <Button type="submit" variant="outline">Sign out</Button>

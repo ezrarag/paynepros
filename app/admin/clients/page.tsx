@@ -1,11 +1,9 @@
 import { ClientWorkspaceList } from "@/components/admin/ClientWorkspaceList"
 import {
-  bulkGenerateIntakeLinks,
   bulkUpdate,
   completeClientWorkspace,
   createClient,
   restoreClientWorkspace,
-  updateClientChecklistStatus,
 } from "./actions"
 
 export default async function ClientsPage({
@@ -26,10 +24,8 @@ export default async function ClientsPage({
       listMode={listMode}
       createClient={createClient}
       bulkUpdate={bulkUpdate}
-      bulkGenerateIntakeLinks={bulkGenerateIntakeLinks}
       completeClientWorkspace={completeClientWorkspace}
       restoreClientWorkspace={restoreClientWorkspace}
-      updateClientChecklistStatus={updateClientChecklistStatus}
     />
   )
 }

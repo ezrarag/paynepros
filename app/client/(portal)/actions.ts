@@ -1,8 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { signOut } from "@/auth"
-import { requireClientAuth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import {
+  clearClientPortalSession,
+  requireClientPortalSession,
+} from "@/lib/client-portal-session"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import {
   checklistItems,
@@ -14,12 +17,12 @@ import type { TaxReturnChecklist } from "@/lib/types/client-workspace"
 
 export async function updateClientChecklistStatus(formData: FormData): Promise<void> {
   try {
-    const user = await requireClientAuth()
+    const user = await requireClientPortalSession()
     const workspaceId = String(formData.get("workspaceId") || "")
     const itemKey = String(formData.get("itemKey") || "")
     const nextStatus = String(formData.get("status") || "")
 
-    if (!workspaceId || workspaceId !== user.clientWorkspaceId) {
+    if (!workspaceId || workspaceId !== user.workspaceId) {
       return
     }
 
@@ -69,5 +72,6 @@ export async function updateClientChecklistStatus(formData: FormData): Promise<v
 }
 
 export async function clientSignOut(): Promise<void> {
-  await signOut({ redirectTo: "/client/login" })
+  await clearClientPortalSession()
+  redirect("/client/login")
 }

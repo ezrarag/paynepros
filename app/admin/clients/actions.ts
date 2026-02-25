@@ -80,6 +80,7 @@ export async function completeClientWorkspace(workspaceId: string): Promise<Acti
     })
 
     revalidatePath("/admin/clients")
+    revalidatePath("/admin/checklists")
     revalidatePath("/admin")
     return { success: true, data: undefined }
   } catch (error) {
@@ -107,6 +108,7 @@ export async function restoreClientWorkspace(workspaceId: string): Promise<Actio
     })
 
     revalidatePath("/admin/clients")
+    revalidatePath("/admin/checklists")
     revalidatePath("/admin")
     return { success: true, data: undefined }
   } catch (error) {
@@ -235,6 +237,7 @@ export async function updateClientChecklistStatus(input: {
 
     revalidatePath("/admin/clients")
     revalidatePath(`/admin/clients/${input.workspaceId}`)
+    revalidatePath("/admin/checklists")
     revalidatePath("/admin")
     return { success: true, data: undefined }
   } catch (error) {

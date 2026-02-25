@@ -119,8 +119,8 @@ export const defaultHomeSections: HomeSectionContent[] = [
     bullets: [],
     formFields: ["FIRST NAME *", "LAST NAME *", "EMAIL *", "MESSAGES *"],
     imageSrc:
-      "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2Fheadshot%20-%20detania%20payne.jpeg?alt=media&token=a537d359-f445-4603-bf84-2615d39eb2f5",
-    imageAlt: "Woman smiling while working on laptop",
+      "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2F593ab9_549b771892524f1a9466b07c473d4dfc~mv2.avif?alt=media&token=2724bcbd-b196-4616-a2ee-6ea01eb86fd4",
+    imageAlt: "Business owner on a consultation call",
     ctaPrimaryLabel: "SUBMIT",
     enabled: true,
   },
