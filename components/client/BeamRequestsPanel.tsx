@@ -37,7 +37,7 @@ export function BeamRequestsPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>BEAM Requests</CardTitle>
+        <CardTitle className="leading-tight">BEAM Requests</CardTitle>
         <CardDescription>
           Open platform requests and fixes tracked by the admin team.
         </CardDescription>
@@ -51,11 +51,13 @@ export function BeamRequestsPanel() {
           <ul className="space-y-3">
             {requests.map((request) => (
               <li key={request.id} className="rounded-lg border p-3">
-                <div className="text-sm font-medium">{request.title}</div>
-                <div className="text-sm text-muted-foreground mt-1">{request.description}</div>
+                <div className="break-words text-sm font-medium leading-6">{request.title}</div>
+                <div className="mt-1 break-words text-sm leading-6 text-muted-foreground">
+                  {request.description}
+                </div>
                 {request.screenshotUrl ? (
                   <a
-                    className="text-sm underline mt-2 inline-block"
+                    className="mt-2 inline-block break-all text-sm underline"
                     href={request.screenshotUrl}
                     target="_blank"
                     rel="noreferrer"

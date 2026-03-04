@@ -68,11 +68,16 @@ export default async function ClientPortalPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold">{workspace.displayName}</h1>
-          <p className="text-sm text-muted-foreground">Signed in as {clientUser.email}</p>
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-semibold leading-tight sm:text-3xl">
+            {workspace.displayName}
+          </h1>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Signed in as{" "}
+            <span className="break-all font-medium text-foreground/85">{clientUser.email}</span>
+          </p>
         </div>
         <form action={clientSignOut}>
           <Button type="submit" variant="outline">Sign out</Button>
@@ -82,8 +87,10 @@ export default async function ClientPortalPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Tax Return Status</CardTitle>
-            <CardDescription>Live status shared with your PaynePros team</CardDescription>
+            <CardTitle className="leading-tight">Tax Return Status</CardTitle>
+            <CardDescription className="leading-6">
+              Live status shared with your PaynePros team
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Badge>{getLifecycleBadgeLabel(checklist)}</Badge>
@@ -92,10 +99,10 @@ export default async function ClientPortalPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Latest Intake</CardTitle>
-            <CardDescription>Your most recent intake submission</CardDescription>
+            <CardTitle className="leading-tight">Latest Intake</CardTitle>
+            <CardDescription className="leading-6">Your most recent intake submission</CardDescription>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
+          <CardContent className="break-words text-sm leading-6 text-muted-foreground">
             {latestIntake
               ? new Date(latestIntake.submittedAt).toLocaleString(undefined, {
                   year: "numeric",
@@ -110,10 +117,10 @@ export default async function ClientPortalPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Contact</CardTitle>
-            <CardDescription>Primary email on file</CardDescription>
+            <CardTitle className="leading-tight">Contact</CardTitle>
+            <CardDescription className="leading-6">Primary email on file</CardDescription>
           </CardHeader>
-          <CardContent className="text-sm">
+          <CardContent className="break-all text-sm leading-6">
             {workspace.primaryContact?.email ?? "Not available"}
           </CardContent>
         </Card>
@@ -122,7 +129,7 @@ export default async function ClientPortalPage() {
       <Card>
         <CardHeader>
           <CardTitle>Checklist</CardTitle>
-          <CardDescription>
+          <CardDescription className="leading-6">
             Update each item as you complete it. Admin dashboard reflects these updates in real time.
           </CardDescription>
         </CardHeader>
@@ -130,11 +137,15 @@ export default async function ClientPortalPage() {
           {checklistItems.map((item) => {
             const status = checklist[item.key]
             return (
-              <form key={item.key} action={updateClientChecklistStatus} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[1fr_auto_auto] md:items-center">
+              <form
+                key={item.key}
+                action={updateClientChecklistStatus}
+                className="grid gap-3 rounded-lg border p-3 md:grid-cols-[1fr_auto_auto] md:items-center"
+              >
                 <input type="hidden" name="workspaceId" value={workspace.id} />
                 <input type="hidden" name="itemKey" value={item.key} />
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{item.label}</span>
+                <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+                  <span className="break-words text-sm font-medium leading-6 sm:text-base">{item.label}</span>
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${statusStyles[status]}`}>
                     {checklistStatusLabels[status]}
                   </span>
@@ -142,13 +153,15 @@ export default async function ClientPortalPage() {
                 <select
                   name="status"
                   defaultValue={status}
-                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm md:w-auto"
                 >
                   <option value="not_started">Not started</option>
                   <option value="in_progress">In progress</option>
                   <option value="complete">Complete</option>
                 </select>
-                <Button type="submit" variant="outline" className="h-9">Save</Button>
+                <Button type="submit" variant="outline" className="h-9 w-full md:w-auto">
+                  Save
+                </Button>
               </form>
             )
           })}
@@ -158,7 +171,7 @@ export default async function ClientPortalPage() {
       <Card>
         <CardHeader>
           <CardTitle>Requested Items</CardTitle>
-          <CardDescription>Action items from your preparer.</CardDescription>
+          <CardDescription className="leading-6">Action items from your preparer.</CardDescription>
         </CardHeader>
         <CardContent>
           {openClientRequests.length === 0 ? (
@@ -170,15 +183,17 @@ export default async function ClientPortalPage() {
                 const isDocRequest = isDocumentRequestType(request.type)
                 return (
                   <li key={request.id} className="rounded-lg border p-3">
-                    <div className="text-sm font-medium">{request.title}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{request.instructions}</div>
+                    <div className="break-words text-sm font-medium leading-6">{request.title}</div>
+                    <div className="mt-1 break-words text-sm leading-6 text-muted-foreground">
+                      {request.instructions}
+                    </div>
                     {request.noteFromPreparer ? (
-                      <div className="text-sm mt-2">
+                      <div className="mt-2 break-words text-sm leading-6">
                         <span className="text-muted-foreground">Note:</span>{" "}
                         {request.noteFromPreparer}
                       </div>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-muted-foreground">
                       <span>Status: {request.status.replace("_", " ")}</span>
                       {request.dueAt ? (
                         <span>
@@ -219,9 +234,11 @@ export default async function ClientPortalPage() {
             <ul className="space-y-3">
               {timeline.map((event) => (
                 <li key={event.id} className="rounded-lg border p-3">
-                  <div className="text-sm font-medium">{event.title}</div>
+                  <div className="break-words text-sm font-medium leading-6">{event.title}</div>
                   {event.description && (
-                    <div className="text-sm text-muted-foreground mt-1">{event.description}</div>
+                    <div className="mt-1 break-words text-sm leading-6 text-muted-foreground">
+                      {event.description}
+                    </div>
                   )}
                   <div className="text-xs text-muted-foreground mt-2">
                     {new Date(event.createdAt).toLocaleString()}
