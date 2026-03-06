@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { canViewMessageContent } from "@/lib/rbac"
-import { getMessageContentByTenantAndId } from "@/lib/mock/admin"
+import { getMessageContentForTenant } from "@/lib/messages"
 
 export async function GET(request: Request) {
   const user = await getCurrentUser()
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 })
   }
 
-  const content = getMessageContentByTenantAndId(user.tenantId, id)
+  const content = await getMessageContentForTenant(user.tenantId, id)
   if (!content) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }

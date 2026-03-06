@@ -50,6 +50,12 @@ export const CLIENT_REQUEST_TEMPLATES: ClientRequestTemplate[] = [
     instructions: "Review and confirm engagement/consent before filing work begins.",
     completionMode: "confirm_info",
   },
+  {
+    type: "other",
+    title: "Other",
+    instructions: "Provide the requested item noted by your preparer.",
+    completionMode: "confirm_info",
+  },
 ]
 
 export const getClientRequestTemplate = (type: ClientRequestType): ClientRequestTemplate | null =>

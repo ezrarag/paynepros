@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getCurrentUser } from "@/lib/auth"
 import { listMessageMeta } from "@/lib/messages"
-import { getMessageMetaMetrics } from "@/lib/mock/admin"
 import { integrationRepository } from "@/lib/repositories/integration-repository"
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { InboxSummary } from "@/components/admin/command-center/InboxSummary"
@@ -18,28 +17,29 @@ export default async function DashboardInboxPage() {
 
   const workspaces = await clientWorkspaceRepository.findAll(50)
   const hasConnectedInbox = await integrationRepository.hasConnectedInbox(user.tenantId)
-  let totalUnread = 0
+  const result = await listMessageMeta()
+  const metaList = result.data ?? []
+  const hasFallbackSubmissions = metaList.length > 0
+  const shouldShowInbox = hasConnectedInbox || hasFallbackSubmissions
+  const totalUnread = metaList.filter((meta) => meta.unread).length
   let recentMessages: Array<MessageSummary & { clientName: string }> = []
 
-  if (hasConnectedInbox) {
-    const result = await listMessageMeta()
-    const metaList = result.data ?? []
-    totalUnread = getMessageMetaMetrics(user.tenantId).unreadMessagesTotal
-    recentMessages = metaList
-      .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
-      .slice(0, 20)
-      .map((meta) => {
-        const workspace = workspaces.find((w) => w.id === meta.workspaceId)
-        return {
-          workspaceId: meta.workspaceId,
-          channel: (meta.channel === "facebook" ? "ig" : meta.channel) as MessageSummary["channel"],
-          unreadCount: meta.unread ? 1 : 0,
-          lastSnippet: meta.snippetMasked ?? "",
-          lastAt: meta.receivedAt,
-          clientName: workspace?.displayName ?? "Unknown",
-        }
-      })
-  }
+  recentMessages = metaList
+    .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime())
+    .slice(0, 20)
+    .map((meta) => {
+      const workspace = workspaces.find((w) => w.id === meta.workspaceId)
+      return {
+        workspaceId: meta.workspaceId,
+        channel: (meta.channel === "facebook" ? "ig" : meta.channel) as MessageSummary["channel"],
+        unreadCount: meta.unread ? 1 : 0,
+        lastSnippet: meta.snippetMasked ?? "",
+        lastAt: meta.receivedAt,
+        clientName:
+          workspace?.displayName ??
+          (meta.workspaceId === "website-submissions" ? "Website submissions" : "Unknown"),
+      }
+    })
 
   return (
     <div className="space-y-6">
@@ -62,7 +62,7 @@ export default async function DashboardInboxPage() {
           <InboxSummary
             recentMessages={recentMessages}
             totalUnread={totalUnread}
-            hasConnectedInbox={hasConnectedInbox}
+            hasConnectedInbox={shouldShowInbox}
           />
         </CardContent>
       </Card>

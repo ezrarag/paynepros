@@ -172,6 +172,8 @@ export async function updateChecklistStatus(formData: FormData): Promise<ActionR
 export async function createClientRequest(input: {
   workspaceId: string
   templateType: ClientRequestType
+  customTitle?: string
+  customInstructions?: string
   noteFromPreparer?: string
   delivery: ClientRequestDelivery[]
   dueAt?: string
@@ -182,10 +184,18 @@ export async function createClientRequest(input: {
       return { success: false, error: "Invalid request template" }
     }
 
+    const customTitle = input.customTitle?.trim()
+    const customInstructions = input.customInstructions?.trim()
+    const requestTitle = input.templateType === "other" && customTitle ? customTitle : template.title
+    const requestInstructions =
+      input.templateType === "other"
+        ? customInstructions || template.instructions
+        : template.instructions
+
     const requestRecord = await clientRequestRepository.create(input.workspaceId, {
       type: template.type,
-      title: template.title,
-      instructions: template.instructions,
+      title: requestTitle,
+      instructions: requestInstructions,
       noteFromPreparer: input.noteFromPreparer?.trim() || undefined,
       delivery: input.delivery,
       status: "sent",
@@ -195,7 +205,7 @@ export async function createClientRequest(input: {
     await clientWorkspaceRepository.appendTimelineEvent(input.workspaceId, {
       type: "client_request_sent",
       title: "Client request sent",
-      description: template.title,
+      description: requestTitle,
       metadata: {
         requestId: requestRecord.id,
         type: requestRecord.type,

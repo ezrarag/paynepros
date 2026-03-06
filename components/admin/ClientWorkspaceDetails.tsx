@@ -120,6 +120,8 @@ interface ClientWorkspaceDetailsProps {
   createClientRequest: (input: {
     workspaceId: string
     templateType: ClientRequestType
+    customTitle?: string
+    customInstructions?: string
     noteFromPreparer?: string
     delivery: ClientRequestDelivery[]
     dueAt?: string
@@ -256,6 +258,12 @@ export function ClientWorkspaceDetails({
   const [expandedTimelineEventId, setExpandedTimelineEventId] = useState<string | null>(null)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [requestTemplateType, setRequestTemplateType] = useState<ClientRequestType>("w2")
+  const [requestTemplateSearch, setRequestTemplateSearch] = useState(
+    getClientRequestTemplate("w2")?.title ?? "Send W-2(s)"
+  )
+  const [requestInstructions, setRequestInstructions] = useState(
+    getClientRequestTemplate("w2")?.instructions ?? ""
+  )
   const [requestNote, setRequestNote] = useState("")
   const [requestDueAt, setRequestDueAt] = useState("")
   const [requestSendEmail, setRequestSendEmail] = useState(true)
@@ -339,6 +347,17 @@ export function ClientWorkspaceDetails({
     viewed: "bg-blue-100 text-blue-800",
     completed: "bg-emerald-100 text-emerald-800",
   }
+  const customTemplateNames = Array.from(
+    new Set(
+      clientRequests
+        .filter((request) => request.type === "other")
+        .map((request) => request.title.trim())
+        .filter(Boolean)
+    )
+  )
+  const searchableTemplateOptions = Array.from(
+    new Set([...CLIENT_REQUEST_TEMPLATES.map((template) => template.title), ...customTemplateNames])
+  )
 
   useEffect(() => {
     if (!editOpen) return
@@ -617,6 +636,24 @@ export function ClientWorkspaceDetails({
     }
   }
 
+  const findTemplateByTitle = (title: string) =>
+    CLIENT_REQUEST_TEMPLATES.find(
+      (template) => template.title.toLowerCase() === title.trim().toLowerCase()
+    )
+
+  const applyTemplateSearchSelection = (value: string) => {
+    setRequestTemplateSearch(value)
+    const matchedTemplate = findTemplateByTitle(value)
+    if (matchedTemplate) {
+      setRequestTemplateType(matchedTemplate.type)
+      setRequestInstructions(matchedTemplate.instructions)
+      return
+    }
+    if (value.trim()) {
+      setRequestTemplateType("other")
+    }
+  }
+
   const sendClientRequest = () => {
     setError(null)
     const delivery: ClientRequestDelivery[] = requestSendEmail ? ["email"] : []
@@ -625,10 +662,24 @@ export function ClientWorkspaceDetails({
       return
     }
 
+    const templateLabel = requestTemplateSearch.trim()
+    const matchedTemplate = findTemplateByTitle(templateLabel)
+    const shouldUseOther = !matchedTemplate && templateLabel.length > 0
+    const templateType = shouldUseOther
+      ? "other"
+      : matchedTemplate?.type ?? requestTemplateType
+    const customTitle = shouldUseOther ? templateLabel : undefined
+    const customInstructions =
+      templateType === "other"
+        ? requestInstructions.trim() || "Provide the requested item noted by your preparer."
+        : undefined
+
     startTransition(async () => {
       const result = await createClientRequest({
         workspaceId: workspace.id,
-        templateType: requestTemplateType,
+        templateType,
+        customTitle,
+        customInstructions,
         noteFromPreparer: requestNote.trim() || undefined,
         delivery,
         dueAt: requestDueAt || undefined,
@@ -654,6 +705,8 @@ export function ClientWorkspaceDetails({
 
       setRequestModalOpen(false)
       setRequestTemplateType("w2")
+      setRequestTemplateSearch(getClientRequestTemplate("w2")?.title ?? "Send W-2(s)")
+      setRequestInstructions(getClientRequestTemplate("w2")?.instructions ?? "")
       setRequestNote("")
       setRequestDueAt("")
       setRequestSendEmail(true)
@@ -1629,37 +1682,86 @@ export function ClientWorkspaceDetails({
 
       {requestModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => setRequestModalOpen(false)}
         >
-          <Card className="w-full max-w-xl" onClick={(event) => event.stopPropagation()}>
+          <Card
+            className="w-full max-w-xl max-h-[90vh] overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle>Request docs</CardTitle>
               <CardDescription>
                 Create and send a structured request to this client.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 overflow-y-auto max-h-[calc(90vh-7rem)] pr-1">
               <div className="space-y-2">
                 <Label htmlFor="request-template">Template</Label>
-                <Select
-                  value={requestTemplateType}
-                  onValueChange={(value) => setRequestTemplateType(value as ClientRequestType)}
-                >
-                  <SelectTrigger id="request-template">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLIENT_REQUEST_TEMPLATES.map((template) => (
-                      <SelectItem key={template.type} value={template.type}>
-                        {template.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-muted-foreground">
-                  {getClientRequestTemplate(requestTemplateType)?.instructions}
+                <Input
+                  id="request-template"
+                  list="request-template-options"
+                  value={requestTemplateSearch}
+                  onChange={(event) => applyTemplateSearchSelection(event.target.value)}
+                  placeholder="Search template or type a new one..."
+                />
+                <datalist id="request-template-options">
+                  {searchableTemplateOptions.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {CLIENT_REQUEST_TEMPLATES.map((template) => (
+                    <Button
+                      key={template.type}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => applyTemplateSearchSelection(template.title)}
+                    >
+                      {template.title}
+                    </Button>
+                  ))}
                 </div>
+                {requestTemplateSearch.trim() &&
+                  !searchableTemplateOptions.some(
+                    (option) =>
+                      option.toLowerCase() === requestTemplateSearch.trim().toLowerCase()
+                  ) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setRequestTemplateType("other")
+                        if (!requestInstructions.trim()) {
+                          setRequestInstructions(
+                            "Provide the requested item noted by your preparer."
+                          )
+                        }
+                      }}
+                    >
+                      Add "{requestTemplateSearch.trim()}" as Other
+                    </Button>
+                  )}
+                <div className="text-xs text-muted-foreground">
+                  {requestTemplateType === "other"
+                    ? "Custom request title will be used for this send."
+                    : getClientRequestTemplate(requestTemplateType)?.instructions}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="request-instructions">
+                  Instructions {requestTemplateType === "other" ? "*" : "(optional override)"}
+                </Label>
+                <Textarea
+                  id="request-instructions"
+                  placeholder="What does the client need to do?"
+                  value={requestInstructions}
+                  onChange={(event) => setRequestInstructions(event.target.value)}
+                  rows={3}
+                />
               </div>
 
               <div className="space-y-2">
@@ -1707,7 +1809,7 @@ export function ClientWorkspaceDetails({
                   : "Confirm information and mark request complete."}
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pb-1">
                 <Button variant="outline" onClick={() => setRequestModalOpen(false)}>
                   Cancel
                 </Button>

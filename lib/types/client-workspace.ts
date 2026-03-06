@@ -210,6 +210,7 @@ export type ClientRequestType =
   | "mileage"
   | "schedule_c_expenses"
   | "engagement_consent"
+  | "other"
   | "confirm_info"
 
 export type ClientRequestDelivery = "email" | "sms"

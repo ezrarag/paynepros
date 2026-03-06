@@ -25,7 +25,7 @@ export default async function MessagingPage({
         <div>
           <h1 className="text-3xl font-bold">Messaging</h1>
           <p className="text-muted-foreground mt-2">
-            Unified inbox (metadata). Full content visible to owner only.
+            Unified inbox, including website/contact submissions while integrations are pending. Full content visible to owner only.
           </p>
           {workspaceId && (
             <p className="text-sm text-muted-foreground mt-1">

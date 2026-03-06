@@ -132,7 +132,7 @@ export function MessagingInbox({
           <CardHeader>
             <CardTitle>Unified Inbox</CardTitle>
             <CardDescription>
-              Messages from Gmail, Outlook, WhatsApp, etc. (masked for privacy)
+              Messages from inbox integrations plus website/contact submissions (masked for privacy)
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
-import { listMessageMetaByTenant } from "@/lib/mock/admin"
+import { listMessageMetaForTenant } from "@/lib/messages"
 
 export async function GET(request: Request) {
   const user = await getCurrentUser()
@@ -11,6 +11,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const workspaceId = searchParams.get("workspaceId") ?? undefined
 
-  const list = listMessageMetaByTenant(user.tenantId, workspaceId)
+  const list = await listMessageMetaForTenant(user.tenantId, workspaceId)
   return NextResponse.json({ data: list })
 }
