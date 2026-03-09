@@ -18,6 +18,12 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
             <Link href="/contact" className="hover:text-[#2f2a22]">
               CONTACT
             </Link>
+            <Link href="/privacy" className="hover:text-[#2f2a22]">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[#2f2a22]">
+              Terms of Service
+            </Link>
             <Link href="/sign-in" className="hover:text-[#2f2a22]">
               SIGN IN
             </Link>
