@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IntuitEnvironment {
+  SANDBOX
+  PRODUCTION
+}
+
+enum IntuitSyncStatus {
+  IDLE
+  SYNCING
+  SUCCESS
+  ERROR
+}
+
+model Organization {
+  id               String            @id @default(cuid())
+  tenantId         String            @unique @map("tenant_id")
+  name             String
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  intuitConnection IntuitConnection?
+  qbCustomers      QBCustomer[]
+  qbInvoices       QBInvoice[]
+
+  @@map("organizations")
+}
+
+model IntuitConnection {
+  id                    String           @id @default(cuid())
+  organizationId        String           @unique @map("organization_id")
+  realmId               String           @unique @map("realm_id")
+  environment           IntuitEnvironment @default(SANDBOX)
+  accessToken           String           @map("access_token")
+  refreshToken          String           @map("refresh_token")
+  tokenType             String?          @map("token_type")
+  scope                 String?
+  accessTokenExpiresAt  DateTime         @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime?        @map("refresh_token_expires_at")
+  connectedAt           DateTime         @default(now()) @map("connected_at")
+  lastSyncedAt          DateTime?        @map("last_synced_at")
+  syncStatus            IntuitSyncStatus @default(IDLE) @map("sync_status")
+  syncError             String?          @map("sync_error")
+  qboCompanyName        String?          @map("qbo_company_name")
+  rawCompanyInfo        Json?            @map("raw_company_info")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  qbCustomers  QBCustomer[]
+  qbInvoices   QBInvoice[]
+
+  @@index([accessTokenExpiresAt])
+  @@index([syncStatus])
+  @@map("intuit_connections")
+}
+
+model QBCustomer {
+  id                String   @id @default(cuid())
+  organizationId    String   @map("organization_id")
+  intuitConnectionId String  @map("intuit_connection_id")
+  qbId              String   @map("qb_id")
+  displayName       String   @map("display_name")
+  companyName       String?  @map("company_name")
+  email             String?
+  phone             String?
+  active            Boolean  @default(true)
+  syncedAt          DateTime @default(now()) @map("synced_at")
+  raw               Json
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  intuitConnection IntuitConnection @relation(fields: [intuitConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, qbId])
+  @@index([organizationId])
+  @@index([displayName])
+  @@map("qb_customers")
+}
+
+model QBInvoice {
+  id                String    @id @default(cuid())
+  organizationId    String    @map("organization_id")
+  intuitConnectionId String   @map("intuit_connection_id")
+  qbId              String    @map("qb_id")
+  docNumber         String?   @map("doc_number")
+  customerQbId      String?   @map("customer_qb_id")
+  customerName      String?   @map("customer_name")
+  txnDate           DateTime? @map("txn_date")
+  dueDate           DateTime? @map("due_date")
+  totalAmt          Decimal?  @map("total_amt") @db.Decimal(12, 2)
+  balance           Decimal?  @map("balance") @db.Decimal(12, 2)
+  currency          String?   @map("currency")
+  status            String?
+  syncedAt          DateTime  @default(now()) @map("synced_at")
+  raw               Json
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  intuitConnection IntuitConnection @relation(fields: [intuitConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, qbId])
+  @@index([organizationId])
+  @@index([txnDate])
+  @@map("qb_invoices")
+}

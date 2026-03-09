@@ -63,58 +63,63 @@ export class ClientPortalAuthRepository {
   }
 
   async consumeMagicLink(token: string): Promise<{ workspaceId: string; email: string } | null> {
-    const tokenHash = hashToken(token)
-    const now = new Date()
+    try {
+      const tokenHash = hashToken(token)
+      const now = new Date()
 
-    if (!adminDb) {
-      const index = mockLinks.findIndex((link) => link.tokenHash === tokenHash)
-      if (index === -1) return null
-      const link = mockLinks[index]
-      if (link.status !== "active") return null
-      if (new Date(link.expiresAt).getTime() <= now.getTime()) {
-        mockLinks[index] = { ...link, status: "expired" }
+      if (!adminDb) {
+        const index = mockLinks.findIndex((link) => link.tokenHash === tokenHash)
+        if (index === -1) return null
+        const link = mockLinks[index]
+        if (link.status !== "active") return null
+        if (new Date(link.expiresAt).getTime() <= now.getTime()) {
+          mockLinks[index] = { ...link, status: "expired" }
+          return null
+        }
+        mockLinks[index] = { ...link, status: "used", usedAt: new Date().toISOString() }
+        return { workspaceId: link.workspaceId, email: link.email }
+      }
+
+      const snapshot = await adminDb
+        .collection(COLLECTION)
+        .where("tokenHash", "==", tokenHash)
+        .limit(1)
+        .get()
+
+      if (snapshot.empty) return null
+
+      const doc = snapshot.docs[0]
+      const data = doc.data() as {
+        workspaceId?: string
+        email?: string
+        status?: "active" | "used" | "expired"
+        expiresAt?: FirebaseFirestore.Timestamp | Date | string
+      }
+
+      if (!data.workspaceId || !data.email || data.status !== "active") {
         return null
       }
-      mockLinks[index] = { ...link, status: "used", usedAt: new Date().toISOString() }
-      return { workspaceId: link.workspaceId, email: link.email }
-    }
 
-    const snapshot = await adminDb
-      .collection(COLLECTION)
-      .where("tokenHash", "==", tokenHash)
-      .limit(1)
-      .get()
+      const expiresAtIso = toIsoString(data.expiresAt)
+      if (new Date(expiresAtIso).getTime() <= now.getTime()) {
+        await doc.ref.update({
+          status: "expired",
+        })
+        return null
+      }
 
-    if (snapshot.empty) return null
-
-    const doc = snapshot.docs[0]
-    const data = doc.data() as {
-      workspaceId?: string
-      email?: string
-      status?: "active" | "used" | "expired"
-      expiresAt?: FirebaseFirestore.Timestamp | Date | string
-    }
-
-    if (!data.workspaceId || !data.email || data.status !== "active") {
-      return null
-    }
-
-    const expiresAtIso = toIsoString(data.expiresAt)
-    if (new Date(expiresAtIso).getTime() <= now.getTime()) {
       await doc.ref.update({
-        status: "expired",
+        status: "used",
+        usedAt: Timestamp.now(),
       })
+
+      return {
+        workspaceId: data.workspaceId,
+        email: data.email,
+      }
+    } catch (error) {
+      console.error("Failed to consume client magic link:", error)
       return null
-    }
-
-    await doc.ref.update({
-      status: "used",
-      usedAt: Timestamp.now(),
-    })
-
-    return {
-      workspaceId: data.workspaceId,
-      email: data.email,
     }
   }
 }

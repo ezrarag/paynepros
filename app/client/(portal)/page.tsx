@@ -35,37 +35,64 @@ export default async function ClientPortalPage() {
     "@/lib/repositories/client-request-repository"
   )
 
-  const workspace = await clientWorkspaceRepository.findById(clientUser.workspaceId)
+  let workspace: Awaited<ReturnType<typeof clientWorkspaceRepository.findById>> = null
+  let timeline: Awaited<ReturnType<typeof clientWorkspaceRepository.getTimeline>> = []
+  let latestIntake: Awaited<ReturnType<typeof intakeResponseRepository.findLatest>> = null
+  let openClientRequests: Awaited<ReturnType<typeof clientRequestRepository.listByWorkspace>> = []
+
+  try {
+    workspace = await clientWorkspaceRepository.findById(clientUser.workspaceId)
+    if (!workspace) {
+      redirect("/client/login")
+    }
+
+    const allClientRequests = await clientRequestRepository.listByWorkspace(workspace.id)
+    openClientRequests = allClientRequests.filter((request) => request.status !== "completed")
+    const unviewedRequests = openClientRequests.filter((request) => !request.viewedAt)
+
+    if (unviewedRequests.length > 0) {
+      const viewedAt = new Date().toISOString()
+      for (const request of unviewedRequests) {
+        const updated = await clientRequestRepository.updateStatus(workspace.id, request.id, {
+          status: "viewed",
+          viewedAt,
+        })
+        if (!updated) continue
+        await clientWorkspaceRepository.appendTimelineEvent(workspace.id, {
+          type: "client_request_viewed",
+          title: "Client request viewed",
+          description: request.title,
+          metadata: {
+            requestId: request.id,
+            type: request.type,
+          },
+        })
+      }
+    }
+
+    timeline = await clientWorkspaceRepository.getTimeline(workspace.id, 8)
+    latestIntake = await intakeResponseRepository.findLatest(workspace.id)
+  } catch (error) {
+    console.error("Failed to load client dashboard:", error)
+    return (
+      <div className="mx-auto max-w-2xl p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Unable to load client dashboard</CardTitle>
+            <CardDescription>
+              We hit a server issue loading this workspace. Please request a new link and try again.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
   if (!workspace) {
     redirect("/client/login")
   }
 
   const checklist = normalizeChecklist(workspace.taxReturnChecklist)
-  const timeline = await clientWorkspaceRepository.getTimeline(workspace.id, 8)
-  const latestIntake = await intakeResponseRepository.findLatest(workspace.id)
-  const allClientRequests = await clientRequestRepository.listByWorkspace(workspace.id)
-  const openClientRequests = allClientRequests.filter((request) => request.status !== "completed")
-  const unviewedRequests = openClientRequests
-    .filter((request) => !request.viewedAt)
-  if (unviewedRequests.length > 0) {
-    const viewedAt = new Date().toISOString()
-    for (const request of unviewedRequests) {
-      const updated = await clientRequestRepository.updateStatus(workspace.id, request.id, {
-        status: "viewed",
-        viewedAt,
-      })
-      if (!updated) continue
-      await clientWorkspaceRepository.appendTimelineEvent(workspace.id, {
-        type: "client_request_viewed",
-        title: "Client request viewed",
-        description: request.title,
-        metadata: {
-          requestId: request.id,
-          type: request.type,
-        },
-      })
-    }
-  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">

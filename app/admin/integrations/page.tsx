@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Mail, MessageCircle, Check, X } from "lucide-react"
+import Link from "next/link"
 
 const PROVIDER_LABELS: Record<string, string> = {
   gmail: "Gmail",
@@ -77,6 +78,20 @@ export default async function IntegrationsPage() {
               )}
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>QuickBooks Online</CardTitle>
+          <CardDescription>
+            Connect and monitor tenant-level QuickBooks integrations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild>
+            <Link href="/admin/integrations/quickbooks">Open QuickBooks Admin</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

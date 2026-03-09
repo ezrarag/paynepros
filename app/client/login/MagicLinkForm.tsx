@@ -30,7 +30,7 @@ export default function MagicLinkForm() {
           id="client-email"
           name="email"
           type="email"
-          placeholder="ezra@readyaimgo.biz"
+          placeholder="Enter email here"
           required
         />
       </div>
