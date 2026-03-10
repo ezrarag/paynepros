@@ -21,7 +21,8 @@ enum IntuitSyncStatus {
 
 model Organization {
   id               String            @id @default(cuid())
-  tenantId         String            @unique @map("tenant_id")
+  tenantId         String            @map("tenant_id")
+  clientWorkspaceId String           @unique @map("client_workspace_id")
   name             String
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
@@ -29,6 +30,7 @@ model Organization {
   qbCustomers      QBCustomer[]
   qbInvoices       QBInvoice[]
 
+  @@index([tenantId])
   @@map("organizations")
 }
 

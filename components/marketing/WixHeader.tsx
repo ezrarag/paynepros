@@ -90,7 +90,7 @@ export function WixHeader() {
                     ADMIN LOGIN
                   </Link>
                   <Link
-                    href="/password"
+                    href="/sign-in"
                     className="block text-xs tracking-[0.16em] text-[#5d5547] transition-colors hover:text-[#2f2a22]"
                   >
                     CLIENT LOGIN

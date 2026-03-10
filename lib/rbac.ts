@@ -5,7 +5,7 @@ import type { AdminRole } from "@/lib/types/admin"
 const MESSAGE_CONTENT_ROLES: AdminRole[] = ["OWNER", "ADMIN"]
 
 /** Roles allowed to manage integrations (connect Gmail/Outlook/WhatsApp). */
-const INTEGRATION_MANAGER_ROLES: AdminRole[] = ["OWNER"]
+const INTEGRATION_MANAGER_ROLES: AdminRole[] = ["OWNER", "ADMIN"]
 
 /**
  * Whether the user can view MessageContent (raw body, attachments).
@@ -17,7 +17,7 @@ export function canViewMessageContent(user: CurrentUser): boolean {
 
 /**
  * Whether the user can manage integrations (connect/disconnect providers).
- * Only OWNER by default; configurable via INTEGRATION_MANAGER_ROLES.
+ * OWNER and ADMIN by default; configurable via INTEGRATION_MANAGER_ROLES.
  */
 export function canManageIntegrations(user: CurrentUser): boolean {
   return INTEGRATION_MANAGER_ROLES.includes(user.role)

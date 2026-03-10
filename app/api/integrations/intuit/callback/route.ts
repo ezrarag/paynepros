@@ -7,10 +7,21 @@ import {
   getIntuitOAuthConfig,
   isIntuitOAuthStateFresh,
   parseIntuitOAuthState,
+  type IntuitOAuthState,
 } from "@/lib/intuit/oauth"
 
-function buildDashboardRedirect(request: NextRequest, params?: Record<string, string>) {
-  const url = new URL("/dashboard/quickbooks", request.url)
+function redirectAfterCallback(
+  request: NextRequest,
+  state: IntuitOAuthState | null,
+  params?: Record<string, string>
+): NextResponse {
+  const path = state?.actor === "client" ? "/client" : "/admin/integrations/quickbooks"
+  const url = new URL(path, request.url)
+
+  if (state?.actor === "admin") {
+    url.searchParams.set("clientWorkspaceId", state.clientWorkspaceId)
+  }
+
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.set(key, value)
@@ -30,17 +41,26 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get("code")
   const realmId = searchParams.get("realmId")
-  const state = searchParams.get("state")
+  const stateValue = searchParams.get("state")
   const oauthError = searchParams.get("error")
 
+  let parsedState: IntuitOAuthState | null = null
+  if (stateValue) {
+    try {
+      parsedState = parseIntuitOAuthState(stateValue)
+    } catch {
+      parsedState = null
+    }
+  }
+
   if (oauthError) {
-    return buildDashboardRedirect(request, {
+    return redirectAfterCallback(request, parsedState, {
       error: oauthError,
     })
   }
 
-  if (!code || !realmId || !state) {
-    return buildDashboardRedirect(request, {
+  if (!code || !realmId || !stateValue) {
+    return redirectAfterCallback(request, parsedState, {
       error: "missing_oauth_params",
     })
   }
@@ -48,25 +68,9 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies()
   const storedState = cookieStore.get(INTUIT_OAUTH_STATE_COOKIE)?.value
 
-  if (!storedState || storedState !== state) {
-    return buildDashboardRedirect(request, {
+  if (!storedState || storedState !== stateValue || !parsedState || !isIntuitOAuthStateFresh(parsedState)) {
+    return redirectAfterCallback(request, parsedState, {
       error: "invalid_oauth_state",
-    })
-  }
-
-  let parsedState: { tenantId: string }
-
-  try {
-    const decodedState = parseIntuitOAuthState(state)
-    if (!isIntuitOAuthStateFresh(decodedState)) {
-      return buildDashboardRedirect(request, {
-        error: "expired_oauth_state",
-      })
-    }
-    parsedState = decodedState
-  } catch {
-    return buildDashboardRedirect(request, {
-      error: "invalid_oauth_state_payload",
     })
   }
 
@@ -81,12 +85,16 @@ export async function GET(request: NextRequest) {
       : null
 
     const organization = await prisma.organization.upsert({
-      where: { tenantId: parsedState.tenantId },
+      where: { clientWorkspaceId: parsedState.clientWorkspaceId },
       create: {
         tenantId: parsedState.tenantId,
-        name: `Organization ${parsedState.tenantId}`,
+        clientWorkspaceId: parsedState.clientWorkspaceId,
+        name: parsedState.workspaceName ?? `Workspace ${parsedState.clientWorkspaceId}`,
       },
-      update: {},
+      update: {
+        tenantId: parsedState.tenantId,
+        name: parsedState.workspaceName ?? undefined,
+      },
     })
 
     await prisma.intuitConnection.upsert({
@@ -120,12 +128,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return buildDashboardRedirect(request, {
+    return redirectAfterCallback(request, parsedState, {
       connected: "1",
     })
   } catch (error) {
     console.error("Intuit callback failed:", error)
-    return buildDashboardRedirect(request, {
+    return redirectAfterCallback(request, parsedState, {
       error: "token_exchange_failed",
     })
   }

@@ -18,6 +18,9 @@ export interface IntuitOAuthConfig {
 
 export interface IntuitOAuthState {
   tenantId: string
+  clientWorkspaceId: string
+  actor: "admin" | "client"
+  workspaceName?: string
   nonce: string
   createdAt: number
 }
@@ -61,9 +64,17 @@ export function getIntuitApiBaseUrl(environment: IntuitEnvironment): string {
   return "https://sandbox-quickbooks.api.intuit.com"
 }
 
-export function createIntuitOAuthState(tenantId: string): string {
+export function createIntuitOAuthState(input: {
+  tenantId: string
+  clientWorkspaceId: string
+  actor: "admin" | "client"
+  workspaceName?: string
+}): string {
   const payload: IntuitOAuthState = {
-    tenantId,
+    tenantId: input.tenantId,
+    clientWorkspaceId: input.clientWorkspaceId,
+    actor: input.actor,
+    workspaceName: input.workspaceName,
     nonce: crypto.randomUUID(),
     createdAt: Date.now(),
   }
@@ -75,12 +86,25 @@ export function parseIntuitOAuthState(state: string): IntuitOAuthState {
   const decoded = Buffer.from(state, "base64url").toString("utf8")
   const parsed = JSON.parse(decoded) as Partial<IntuitOAuthState>
 
-  if (!parsed.tenantId || !parsed.nonce || !parsed.createdAt) {
+  if (
+    !parsed.tenantId ||
+    !parsed.clientWorkspaceId ||
+    !parsed.actor ||
+    !parsed.nonce ||
+    !parsed.createdAt
+  ) {
     throw new Error("Invalid OAuth state payload")
+  }
+
+  if (parsed.actor !== "admin" && parsed.actor !== "client") {
+    throw new Error("Invalid OAuth actor")
   }
 
   return {
     tenantId: parsed.tenantId,
+    clientWorkspaceId: parsed.clientWorkspaceId,
+    actor: parsed.actor,
+    workspaceName: parsed.workspaceName,
     nonce: parsed.nonce,
     createdAt: parsed.createdAt,
   }

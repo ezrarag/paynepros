@@ -2,7 +2,7 @@ import Link from "next/link"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/db/prisma"
-import { syncQuickBooksForTenant } from "@/lib/intuit/sync"
+import { syncQuickBooksForOrganization } from "@/lib/intuit/sync"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,53 +18,47 @@ function formatDateTime(value: Date | null | undefined): string {
   })
 }
 
-function formatCurrency(value: string | number | null): string {
-  if (value == null) return "-"
-  const numeric = Number(value)
-  if (Number.isNaN(numeric)) return "-"
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(numeric)
-}
-
-async function syncNowAction() {
+async function syncNowAction(formData: FormData) {
   "use server"
 
   const user = await requireAuth()
-  await syncQuickBooksForTenant(user.tenantId)
+  const organizationId = String(formData.get("organizationId") ?? "")
+  if (!organizationId) return
+
+  const organization = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { tenantId: true },
+  })
+
+  if (!organization || organization.tenantId !== user.tenantId) {
+    throw new Error("Forbidden")
+  }
+
+  await syncQuickBooksForOrganization(organizationId)
 
   revalidatePath("/dashboard/quickbooks")
   revalidatePath("/admin/integrations/quickbooks")
+  revalidatePath("/client")
 }
 
-export default async function QuickBooksDashboardPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ connected?: string; error?: string }>
-}) {
+export default async function QuickBooksDashboardPage() {
   const user = await requireAuth()
-  const params = searchParams ? await searchParams : {}
 
-  const organization = await prisma.organization.findUnique({
+  const organizations = await prisma.organization.findMany({
     where: { tenantId: user.tenantId },
     include: {
       intuitConnection: true,
-      qbInvoices: {
-        orderBy: [{ txnDate: "desc" }, { createdAt: "desc" }],
-        take: 8,
-      },
       _count: {
         select: {
           qbCustomers: true,
+          qbInvoices: true,
         },
       },
     },
+    orderBy: {
+      updatedAt: "desc",
+    },
   })
-
-  const connection = organization?.intuitConnection ?? null
-  const hasConnection = Boolean(connection)
-  const companyName = connection?.qboCompanyName ?? "Not synced yet"
 
   return (
     <div className="space-y-6">
@@ -72,118 +66,80 @@ export default async function QuickBooksDashboardPage({
         <div>
           <h1 className="text-3xl font-bold">QuickBooks</h1>
           <p className="mt-2 text-muted-foreground">
-            Connect your QuickBooks Online company and sync accounting data into Readyaimgo.
+            Tenant-level QuickBooks overview. Connect client workspaces from Admin Integrations.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant={hasConnection ? "outline" : "default"}>
-            <Link href="/api/integrations/intuit/connect">
-              {hasConnection ? "Reconnect QuickBooks" : "Connect QuickBooks"}
-            </Link>
-          </Button>
-          {hasConnection && (
-            <form action={syncNowAction}>
-              <Button type="submit">Sync now</Button>
-            </form>
-          )}
-        </div>
-      </div>
-
-      {params.connected === "1" && (
-        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-          QuickBooks connected successfully. Run a sync to load company data.
-        </div>
-      )}
-
-      {params.error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          QuickBooks connection failed: {params.error}
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Status</CardDescription>
-            <CardTitle className="text-base">Connection</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant={hasConnection ? "default" : "secondary"}>
-              {hasConnection ? "Connected" : "Not connected"}
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>QuickBooks Company</CardDescription>
-            <CardTitle className="text-base">Company name</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">{companyName}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Customer Records</CardDescription>
-            <CardTitle className="text-base">Customers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{organization?._count.qbCustomers ?? 0}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Last Sync</CardDescription>
-            <CardTitle className="text-base">Synced at</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{formatDateTime(connection?.lastSyncedAt)}</p>
-          </CardContent>
-        </Card>
+        <Button asChild>
+          <Link href="/admin/integrations/quickbooks">Open admin QuickBooks dashboard</Link>
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent invoices</CardTitle>
-          <CardDescription>Latest invoices synced from QuickBooks.</CardDescription>
+          <CardTitle>Client workspace integrations</CardTitle>
+          <CardDescription>
+            {organizations.length} workspace{organizations.length === 1 ? "" : "s"} tracked.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {organization?.qbInvoices.length ? (
+          {organizations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No client QuickBooks connections yet.</p>
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="py-2 pr-4">Invoice #</th>
-                    <th className="py-2 pr-4">Customer</th>
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Balance</th>
+                    <th className="py-2 pr-4">Client</th>
+                    <th className="py-2 pr-4">Workspace</th>
                     <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Company</th>
+                    <th className="py-2 pr-4">Last sync</th>
+                    <th className="py-2 pr-4">Data</th>
+                    <th className="py-2 pr-4">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {organization.qbInvoices.map((invoice: any) => (
-                    <tr key={invoice.id} className="border-b last:border-0">
-                      <td className="py-2 pr-4 font-medium">{invoice.docNumber ?? invoice.qbId}</td>
-                      <td className="py-2 pr-4">{invoice.customerName ?? "-"}</td>
-                      <td className="py-2 pr-4">{invoice.txnDate ? invoice.txnDate.toLocaleDateString() : "-"}</td>
-                      <td className="py-2 pr-4">{formatCurrency(invoice.balance as unknown as string | number | null)}</td>
+                  {organizations.map((organization: any) => (
+                    <tr key={organization.id} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium">{organization.name}</td>
+                      <td className="py-2 pr-4 font-mono text-xs">{organization.clientWorkspaceId}</td>
                       <td className="py-2 pr-4">
-                        <Badge variant={invoice.status === "paid" ? "secondary" : "outline"}>
-                          {invoice.status ?? "unknown"}
+                        <Badge variant={organization.intuitConnection ? "default" : "secondary"}>
+                          {organization.intuitConnection ? "Connected" : "Not connected"}
                         </Badge>
+                      </td>
+                      <td className="py-2 pr-4">
+                        {organization.intuitConnection?.qboCompanyName ?? "Not synced"}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {formatDateTime(organization.intuitConnection?.lastSyncedAt)}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-muted-foreground">
+                        {organization._count.qbCustomers} customers / {organization._count.qbInvoices} invoices
+                      </td>
+                      <td className="py-2 pr-4">
+                        {organization.intuitConnection ? (
+                          <form action={syncNowAction}>
+                            <input type="hidden" name="organizationId" value={organization.id} />
+                            <Button type="submit" size="sm">Sync now</Button>
+                          </form>
+                        ) : (
+                          <Button asChild size="sm" variant="outline">
+                            <Link
+                              href={`/api/integrations/intuit/connect?clientWorkspaceId=${encodeURIComponent(
+                                organization.clientWorkspaceId
+                              )}`}
+                            >
+                              Connect
+                            </Link>
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No invoices synced yet. Connect QuickBooks and click "Sync now".
-            </p>
           )}
         </CardContent>
       </Card>

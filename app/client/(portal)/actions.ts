@@ -9,6 +9,7 @@ import {
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { clientRequestRepository } from "@/lib/repositories/client-request-repository"
 import { isDocumentRequestType } from "@/lib/client-requests"
+import { syncQuickBooksForWorkspace } from "@/lib/intuit/sync"
 import {
   checklistItems,
   isChecklistStatus,
@@ -134,6 +135,18 @@ export async function completeClientRequest(formData: FormData): Promise<void> {
     revalidatePath(`/admin/clients/${workspaceId}`)
   } catch (error) {
     console.error("Failed to complete client request:", error)
+  }
+}
+
+export async function syncClientQuickBooks(): Promise<void> {
+  try {
+    const user = await requireClientPortalSession()
+    await syncQuickBooksForWorkspace(user.workspaceId)
+
+    revalidatePath("/client")
+    revalidatePath("/admin/integrations/quickbooks")
+  } catch (error) {
+    console.error("Failed to sync client QuickBooks:", error)
   }
 }
 

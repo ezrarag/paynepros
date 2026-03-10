@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { requireClientPortalSession } from "@/lib/client-portal-session"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { prisma } from "@/lib/db/prisma"
 import { getClientRequestTemplate, isDocumentRequestType } from "@/lib/client-requests"
 import {
   checklistItems,
@@ -14,6 +16,7 @@ import {
   updateClientChecklistStatus,
   clientSignOut,
   completeClientRequest,
+  syncClientQuickBooks,
 } from "./actions"
 
 const statusStyles = {
@@ -22,8 +25,23 @@ const statusStyles = {
   complete: "bg-emerald-100 text-emerald-800",
 } as const
 
-export default async function ClientPortalPage() {
+function formatCurrency(value: string | number | null | undefined): string {
+  if (value == null) return "-"
+  const parsed = Number(value)
+  if (Number.isNaN(parsed)) return "-"
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(parsed)
+}
+
+export default async function ClientPortalPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ connected?: string; error?: string }>
+}) {
   const clientUser = await requireClientPortalSession()
+  const params = searchParams ? await searchParams : {}
 
   const { clientWorkspaceRepository } = await import(
     "@/lib/repositories/client-workspace-repository"
@@ -39,6 +57,7 @@ export default async function ClientPortalPage() {
   let timeline: Awaited<ReturnType<typeof clientWorkspaceRepository.getTimeline>> = []
   let latestIntake: Awaited<ReturnType<typeof intakeResponseRepository.findLatest>> = null
   let openClientRequests: Awaited<ReturnType<typeof clientRequestRepository.listByWorkspace>> = []
+  let quickBooksOrg: any = null
 
   try {
     workspace = await clientWorkspaceRepository.findById(clientUser.workspaceId)
@@ -72,6 +91,21 @@ export default async function ClientPortalPage() {
 
     timeline = await clientWorkspaceRepository.getTimeline(workspace.id, 8)
     latestIntake = await intakeResponseRepository.findLatest(workspace.id)
+    quickBooksOrg = await prisma.organization.findUnique({
+      where: { clientWorkspaceId: workspace.id },
+      include: {
+        intuitConnection: true,
+        qbInvoices: {
+          orderBy: [{ txnDate: "desc" }, { createdAt: "desc" }],
+          take: 5,
+        },
+        _count: {
+          select: {
+            qbCustomers: true,
+          },
+        },
+      },
+    })
   } catch (error) {
     console.error("Failed to load client dashboard:", error)
     return (
@@ -93,6 +127,8 @@ export default async function ClientPortalPage() {
   }
 
   const checklist = normalizeChecklist(workspace.taxReturnChecklist)
+  const qbConnection = quickBooksOrg?.intuitConnection ?? null
+  const hasQuickBooksConnection = Boolean(qbConnection)
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
@@ -152,6 +188,82 @@ export default async function ClientPortalPage() {
           </CardContent>
         </Card>
       </div>
+
+      {params.connected === "1" && (
+        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          QuickBooks connected. You can sync now to pull current accounting data.
+        </div>
+      )}
+      {params.error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          QuickBooks connection failed: {params.error}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>QuickBooks Integration</CardTitle>
+          <CardDescription className="leading-6">
+            Connect your QuickBooks company so both you and your PaynePros team can work from the same data.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Connection</p>
+              <div className="mt-2">
+                <Badge variant={hasQuickBooksConnection ? "default" : "secondary"}>
+                  {hasQuickBooksConnection ? "Connected" : "Not connected"}
+                </Badge>
+              </div>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Company</p>
+              <p className="mt-2 text-sm font-medium">{qbConnection?.qboCompanyName ?? "Not synced yet"}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Customers</p>
+              <p className="mt-2 text-2xl font-semibold">{quickBooksOrg?._count.qbCustomers ?? 0}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Last sync</p>
+              <p className="mt-2 text-sm">
+                {qbConnection?.lastSyncedAt ? new Date(qbConnection.lastSyncedAt).toLocaleString() : "Never"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant={hasQuickBooksConnection ? "outline" : "default"}>
+              <Link href={`/api/integrations/intuit/connect?clientWorkspaceId=${encodeURIComponent(workspace.id)}`}>
+                {hasQuickBooksConnection ? "Reconnect QuickBooks" : "Connect QuickBooks"}
+              </Link>
+            </Button>
+            {hasQuickBooksConnection && (
+              <form action={syncClientQuickBooks}>
+                <Button type="submit">Sync now</Button>
+              </form>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium">Recent invoices</h3>
+            {quickBooksOrg?.qbInvoices?.length ? (
+              <ul className="mt-2 space-y-2">
+                {quickBooksOrg.qbInvoices.map((invoice: any) => (
+                  <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                    <span className="font-medium">{invoice.docNumber ?? invoice.qbId}</span>
+                    <span className="text-muted-foreground">{invoice.customerName ?? "Unknown customer"}</span>
+                    <span>{formatCurrency(invoice.balance)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">No invoices synced yet.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

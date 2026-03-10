@@ -217,14 +217,14 @@ export async function syncQuickBooksForOrganization(
   }
 }
 
-export async function syncQuickBooksForTenant(tenantId: string): Promise<QuickBooksSyncResult> {
+export async function syncQuickBooksForWorkspace(clientWorkspaceId: string): Promise<QuickBooksSyncResult> {
   const organization = await prisma.organization.findUnique({
-    where: { tenantId },
+    where: { clientWorkspaceId },
     select: { id: true },
   })
 
   if (!organization) {
-    throw new Error("Organization not found for current tenant")
+    throw new Error("Organization not found for this client workspace")
   }
 
   return syncQuickBooksForOrganization(organization.id)

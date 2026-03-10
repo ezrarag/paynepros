@@ -26,7 +26,7 @@ export default async function IntegrationsPage() {
         <p className="text-muted-foreground mt-2">
           {canManage
             ? "Connect email and messaging providers to sync messages."
-            : "View connection status. Only the owner can connect or disconnect providers."}
+            : "View connection status. Only OWNER or ADMIN can connect or disconnect providers."}
         </p>
       </div>
 

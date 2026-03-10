@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-const CLIENT_PORTAL_COOKIE = "pp_client_portal"
+export const CLIENT_PORTAL_COOKIE = "pp_client_portal"
 
 type SessionPayload = {
   workspaceId: string
@@ -15,6 +15,13 @@ export interface ClientPortalSession {
 
 const encodePayload = (payload: SessionPayload) =>
   Buffer.from(JSON.stringify(payload), "utf8").toString("base64url")
+
+export function serializeClientPortalSession(session: ClientPortalSession): string {
+  return encodePayload({
+    workspaceId: session.workspaceId,
+    email: session.email,
+  })
+}
 
 const decodePayload = (encoded: string): SessionPayload | null => {
   try {
@@ -60,7 +67,7 @@ export async function requireClientPortalSession(): Promise<ClientPortalSession>
 
 export async function setClientPortalSession(session: ClientPortalSession): Promise<void> {
   const store = await cookies()
-  store.set(CLIENT_PORTAL_COOKIE, encodePayload(session), {
+  store.set(CLIENT_PORTAL_COOKIE, serializeClientPortalSession(session), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
