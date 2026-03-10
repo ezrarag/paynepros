@@ -9,7 +9,6 @@ import {
 import { clientWorkspaceRepository } from "@/lib/repositories/client-workspace-repository"
 import { clientRequestRepository } from "@/lib/repositories/client-request-repository"
 import { isDocumentRequestType } from "@/lib/client-requests"
-import { syncQuickBooksForWorkspace } from "@/lib/intuit/sync"
 import {
   checklistItems,
   isChecklistStatus,
@@ -140,7 +139,11 @@ export async function completeClientRequest(formData: FormData): Promise<void> {
 
 export async function syncClientQuickBooks(): Promise<void> {
   try {
+    if (!process.env.DATABASE_URL) {
+      return
+    }
     const user = await requireClientPortalSession()
+    const { syncQuickBooksForWorkspace } = await import("@/lib/intuit/sync")
     await syncQuickBooksForWorkspace(user.workspaceId)
 
     revalidatePath("/client")

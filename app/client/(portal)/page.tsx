@@ -4,7 +4,6 @@ import { requireClientPortalSession } from "@/lib/client-portal-session"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { prisma } from "@/lib/db/prisma"
 import { getClientRequestTemplate, isDocumentRequestType } from "@/lib/client-requests"
 import {
   checklistItems,
@@ -91,21 +90,31 @@ export default async function ClientPortalPage({
 
     timeline = await clientWorkspaceRepository.getTimeline(workspace.id, 8)
     latestIntake = await intakeResponseRepository.findLatest(workspace.id)
-    quickBooksOrg = await prisma.organization.findUnique({
-      where: { clientWorkspaceId: workspace.id },
-      include: {
-        intuitConnection: true,
-        qbInvoices: {
-          orderBy: [{ txnDate: "desc" }, { createdAt: "desc" }],
-          take: 5,
-        },
-        _count: {
-          select: {
-            qbCustomers: true,
+    if (process.env.DATABASE_URL) {
+      try {
+        const { prisma } = await import("@/lib/db/prisma")
+        quickBooksOrg = await prisma.organization.findUnique({
+          where: { clientWorkspaceId: workspace.id },
+          include: {
+            intuitConnection: true,
+            qbInvoices: {
+              orderBy: [{ txnDate: "desc" }, { createdAt: "desc" }],
+              take: 5,
+            },
+            _count: {
+              select: {
+                qbCustomers: true,
+              },
+            },
           },
-        },
-      },
-    })
+        })
+      } catch (error) {
+        console.error("QuickBooks data unavailable for client dashboard:", error)
+        quickBooksOrg = null
+      }
+    } else {
+      quickBooksOrg = null
+    }
   } catch (error) {
     console.error("Failed to load client dashboard:", error)
     return (
