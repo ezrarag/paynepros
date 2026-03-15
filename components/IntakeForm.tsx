@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
+import { LEAD_SERVICE_TYPE_OPTIONS } from "@/lib/lead-service-types"
 
 const intakeFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -33,9 +34,28 @@ interface IntakeFormProps {
   source?: "website" | "whatsapp" | "instagram" | "facebook" | "sms" | "email"
 }
 
+const FORM_STEPS = [
+  {
+    id: "contact",
+    label: "Contact",
+    fields: ["name", "email", "phone"] as const,
+  },
+  {
+    id: "service",
+    label: "Service",
+    fields: ["preferredContactMethod", "serviceType"] as const,
+  },
+  {
+    id: "details",
+    label: "Details",
+    fields: ["message"] as const,
+  },
+] as const
+
 export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
+  const [stepIndex, setStepIndex] = useState(0)
   const [classificationSummary, setClassificationSummary] = useState<{
     probableService?: string
     urgency?: string
@@ -48,12 +68,24 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
     formState: { errors },
     setValue,
     watch,
+    trigger,
   } = useForm<IntakeFormValues>({
     resolver: zodResolver(intakeFormSchema),
   })
 
   const preferredContactMethod = watch("preferredContactMethod")
   const serviceType = watch("serviceType")
+  const currentStep = FORM_STEPS[stepIndex]
+
+  const goToNextStep = async () => {
+    const isValid = await trigger([...currentStep.fields])
+    if (!isValid) return
+    setStepIndex((current) => Math.min(current + 1, FORM_STEPS.length - 1))
+  }
+
+  const goToPreviousStep = () => {
+    setStepIndex((current) => Math.max(current - 1, 0))
+  }
 
   const onSubmit = async (data: IntakeFormValues) => {
     setIsSubmitting(true)
@@ -100,9 +132,6 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
   }
 
   if (submitStatus === "success") {
-    const urgencyHours = classificationSummary?.urgency === 'high' ? '2' : 
-                         classificationSummary?.urgency === 'medium' ? '12' : '24'
-    
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -136,208 +165,174 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
             <p className="text-sm text-muted-foreground mb-2">
               <strong className="text-[#2f2a22]">Category:</strong> {classificationSummary.probableService}
             </p>
-            <p className="text-sm text-muted-foreground">
-              Expect a response within <strong className="text-[#2f2a22]">{urgencyHours} hours</strong>.
-            </p>
           </motion.div>
         )}
       </motion.div>
     )
   }
 
-  const nameValue = watch("name")
-  const emailValue = watch("email")
-  const phoneValue = watch("phone")
-  const messageValue = watch("message")
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* Name Field - Effica Style */}
-      <div className="space-y-3">
-        <Label htmlFor="name" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
-          My name is
-        </Label>
-        <div className="relative">
-          <Input
-            id="name"
-            {...register("name")}
-            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
-            placeholder={nameValue ? "" : "Your name"}
-            aria-invalid={errors.name ? "true" : "false"}
-          />
-          <AnimatePresence>
-            {nameValue && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+      <div className="flex items-center justify-between gap-2 border-b border-[#ddd3c3] pb-4">
+        {FORM_STEPS.map((step, index) => {
+          const isActive = index === stepIndex
+          const isComplete = index < stepIndex
+          return (
+            <div key={step.id} className="flex min-w-0 flex-1 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (index <= stepIndex) setStepIndex(index)
+                }}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[11px] tracking-[0.12em] ${
+                  isActive
+                    ? "border-[#2f2a22] bg-[#2f2a22] text-[#f8f5ef]"
+                    : isComplete
+                      ? "border-[#a8a37f] bg-[#a8a37f] text-[#f8f5ef]"
+                      : "border-[#d0c6b7] bg-[#fcfbf7] text-[#7d7568]"
+                }`}
               >
-                {nameValue}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        {errors.name && (
-          <p className="text-sm text-destructive">{errors.name.message}</p>
-        )}
+                {index + 1}
+              </button>
+              <div className="min-w-0">
+                <p className={`truncate text-[11px] uppercase tracking-[0.14em] ${isActive ? "text-[#2f2a22]" : "text-[#7d7568]"}`}>
+                  {step.label}
+                </p>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Email Field - Effica Style */}
-      <div className="space-y-3">
-        <Label htmlFor="email" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
-          Contact me at
-        </Label>
-        <div className="relative">
-          <Input
-            id="email"
-            type="email"
-            {...register("email")}
-            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
-            placeholder={emailValue ? "" : "taxprep@paynepros.com"}
-            aria-invalid={errors.email ? "true" : "false"}
-          />
-          <AnimatePresence>
-            {emailValue && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute -top-6 left-0 text-xs text-muted-foreground"
+      {currentStep.id === "contact" ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
+              My name is
+            </Label>
+            <Input
+              id="name"
+              {...register("name")}
+              className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
+              placeholder="Your name"
+              aria-invalid={errors.name ? "true" : "false"}
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
+                Contact me at
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email")}
+                className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
+                placeholder="Enter email here"
+                aria-invalid={errors.email ? "true" : "false"}
+              />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
+                Phone (optional)
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                {...register("phone")}
+                className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
+                placeholder="Enter phone here"
+                aria-invalid={errors.phone ? "true" : "false"}
+              />
+              {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {currentStep.id === "service" ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="preferredContactMethod"
+              className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]"
+            >
+              Preferred Contact Method <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={preferredContactMethod}
+              onValueChange={(value) =>
+                setValue("preferredContactMethod", value as "email" | "phone" | "either", { shouldValidate: true })
+              }
+            >
+              <SelectTrigger
+                id="preferredContactMethod"
+                className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]"
               >
-                {emailValue}
-              </motion.div>
+                <SelectValue placeholder="Select a method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="either">Either</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.preferredContactMethod && (
+              <p className="text-sm text-destructive">{errors.preferredContactMethod.message}</p>
             )}
-          </AnimatePresence>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="serviceType" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
+              I want to improve <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={serviceType}
+              onValueChange={(value) => setValue("serviceType", value, { shouldValidate: true })}
+            >
+              <SelectTrigger id="serviceType" className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]">
+                <SelectValue placeholder="Select a service" />
+              </SelectTrigger>
+              <SelectContent>
+                {LEAD_SERVICE_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.serviceType && <p className="text-sm text-destructive">{errors.serviceType.message}</p>}
+          </div>
         </div>
-        {errors.email && (
-          <p className="text-sm text-destructive">{errors.email.message}</p>
-        )}
-      </div>
+      ) : null}
 
-      {/* Phone Field - Effica Style */}
-      <div className="space-y-3">
-        <Label htmlFor="phone" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
-          Phone (optional)
-        </Label>
-        <div className="relative">
-          <Input
-            id="phone"
-            type="tel"
-            {...register("phone")}
-            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
-            placeholder={phoneValue ? "" : "816-805-1433"}
-            aria-invalid={errors.phone ? "true" : "false"}
-          />
-          <AnimatePresence>
-            {phoneValue && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute -top-6 left-0 text-xs text-muted-foreground"
-              >
-                {phoneValue}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {currentStep.id === "details" ? (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-[#ddd3c3] bg-[#fcfbf7] px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[#6f6758]">
+            {serviceType
+              ? LEAD_SERVICE_TYPE_OPTIONS.find((option) => option.value === serviceType)?.label
+              : "Select a service in the previous step"}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="message" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
+              Additional Details <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="message"
+              {...register("message")}
+              className="min-h-[116px] resize-none rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
+              placeholder="Describe your tax or bookkeeping needs..."
+              rows={5}
+              aria-invalid={errors.message ? "true" : "false"}
+            />
+            {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}
+          </div>
         </div>
-        {errors.phone && (
-          <p className="text-sm text-destructive">{errors.phone.message}</p>
-        )}
-      </div>
-
-      {/* Preferred Contact Method */}
-      <div className="space-y-3">
-        <Label
-          htmlFor="preferredContactMethod"
-          className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]"
-        >
-          Preferred Contact Method <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={preferredContactMethod}
-          onValueChange={(value) =>
-            setValue("preferredContactMethod", value as "email" | "phone" | "either", { shouldValidate: true })
-          }
-        >
-          <SelectTrigger
-            id="preferredContactMethod"
-            className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]"
-          >
-            <SelectValue placeholder="Select a method" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="email">Email</SelectItem>
-            <SelectItem value="phone">Phone</SelectItem>
-            <SelectItem value="either">Either</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.preferredContactMethod && (
-          <p className="text-sm text-destructive">
-            {errors.preferredContactMethod.message}
-          </p>
-        )}
-      </div>
-
-      {/* Service Type */}
-      <div className="space-y-3">
-        <Label htmlFor="serviceType" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
-          I want to improve: <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={serviceType}
-          onValueChange={(value) => setValue("serviceType", value, { shouldValidate: true })}
-        >
-          <SelectTrigger id="serviceType" className="h-12 rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22]">
-            <SelectValue placeholder="Select a service" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="individual-tax">Individual Tax Preparation</SelectItem>
-            <SelectItem value="joint-tax">Joint / Family Returns</SelectItem>
-            <SelectItem value="past-due">Past-Due / Cleanup</SelectItem>
-            <SelectItem value="bookkeeping">Bookkeeping</SelectItem>
-            <SelectItem value="extensions">Extensions</SelectItem>
-            <SelectItem value="amendments">Amendments</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.serviceType && (
-          <p className="text-sm text-destructive">{errors.serviceType.message}</p>
-        )}
-      </div>
-
-      {/* Message Field - Effica Style */}
-      <div className="space-y-3">
-        <Label htmlFor="message" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">
-          Additional Details <span className="text-destructive">*</span>
-        </Label>
-        <div className="relative">
-          <Textarea
-            id="message"
-            {...register("message")}
-            className="min-h-[120px] resize-none rounded-none border-[#cec5b7] bg-[#fefcf8] text-[#2f2a22] placeholder:text-[#8a8174] focus:border-[#2f2a22] focus:ring-[#2f2a22]"
-            placeholder={messageValue ? "" : "Describe your tax or bookkeeping needs..."}
-            rows={4}
-            aria-invalid={errors.message ? "true" : "false"}
-          />
-          <AnimatePresence>
-            {messageValue && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute -top-6 left-0 text-xs text-muted-foreground"
-              >
-                {messageValue.substring(0, 50)}{messageValue.length > 50 ? "..." : ""}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        {errors.message && (
-          <p className="text-sm text-destructive">{errors.message.message}</p>
-        )}
-      </div>
+      ) : null}
 
       {submitStatus === "error" && (
         <motion.p
@@ -349,18 +344,39 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
         </motion.p>
       )}
 
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
+      <div className="flex items-center justify-between gap-3 pt-1">
         <Button
-          type="submit" 
-          className="h-12 w-full rounded-none bg-[#2f2a22] text-[#f8f5ef] hover:bg-[#1f1b15]"
-          disabled={isSubmitting}
+          type="button"
+          variant="outline"
+          className="h-11 rounded-none border-[#cec5b7] bg-[#fefcf8] px-5 text-[11px] uppercase tracking-[0.14em] text-[#4f483d] hover:bg-[#f4efe5]"
+          disabled={stepIndex === 0}
+          onClick={goToPreviousStep}
         >
-          {isSubmitting ? "Submitting..." : "Send Request"}
+          Back
         </Button>
-      </motion.div>
+
+        {stepIndex < FORM_STEPS.length - 1 ? (
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              type="button"
+              className="h-11 rounded-none bg-[#2f2a22] px-5 text-[11px] uppercase tracking-[0.14em] text-[#f8f5ef] hover:bg-[#1f1b15]"
+              onClick={goToNextStep}
+            >
+              Continue
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              type="submit"
+              className="h-11 rounded-none bg-[#2f2a22] px-5 text-[11px] uppercase tracking-[0.14em] text-[#f8f5ef] hover:bg-[#1f1b15]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Send Request"}
+            </Button>
+          </motion.div>
+        )}
+      </div>
 
       <p className="text-xs text-muted-foreground text-center">
         By submitting, you agree to our Terms and Privacy Policy.

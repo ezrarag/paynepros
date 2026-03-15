@@ -4,13 +4,20 @@ import { mockIntegrationStatus } from "@/lib/mock/admin"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Mail, MessageCircle, Check, X } from "lucide-react"
+import { Mail, MessageCircle, Check, X, FileSpreadsheet, FolderSync, Link2, Unplug } from "lucide-react"
 import Link from "next/link"
 
 const PROVIDER_LABELS: Record<string, string> = {
   gmail: "Gmail",
   outlook: "Outlook",
   whatsapp: "WhatsApp",
+}
+
+// TODO: Replace with Firebase-backed Google Workspace OAuth state and token metadata.
+const MOCK_GOOGLE_WORKSPACE_INTEGRATION = {
+  connected: true,
+  accountEmail: "detania@paynepros.com",
+  lastSyncAt: "2026-03-15T08:12:00.000Z",
 }
 
 export default async function IntegrationsPage() {
@@ -91,6 +98,67 @@ export default async function IntegrationsPage() {
         <CardContent>
           <Button asChild>
             <Link href="/admin/integrations/quickbooks">Open QuickBooks Admin</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Workspace / Google Forms</CardTitle>
+          <CardDescription>
+            Prepare Google account connection, form import, and sync support for Forms &amp; Intake.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant={MOCK_GOOGLE_WORKSPACE_INTEGRATION.connected ? "default" : "secondary"}>
+                  {MOCK_GOOGLE_WORKSPACE_INTEGRATION.connected ? "Connected" : "Disconnected"}
+                </Badge>
+                <span className="text-sm font-medium">
+                  {MOCK_GOOGLE_WORKSPACE_INTEGRATION.accountEmail ?? "No connected Google account"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Last sync{" "}
+                {new Date(MOCK_GOOGLE_WORKSPACE_INTEGRATION.lastSyncAt).toLocaleString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {canManage && (
+                <>
+                  <Button variant="outline" disabled>
+                    <Link2 className="mr-2 h-4 w-4" />
+                    Connect Google
+                  </Button>
+                  <Button variant="outline" disabled>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Import Form
+                  </Button>
+                  <Button variant="outline" disabled>
+                    <FolderSync className="mr-2 h-4 w-4" />
+                    Sync
+                  </Button>
+                  <Button variant="outline" disabled>
+                    <Unplug className="mr-2 h-4 w-4" />
+                    Disconnect
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            Google Forms import is staged in the UI and linked to the Forms &amp; Intake workspace. Backend OAuth, Firebase persistence, and sync jobs are still TODO.
+          </div>
+          <Button asChild variant="outline">
+            <Link href="/admin/forms">Open Forms &amp; Intake</Link>
           </Button>
         </CardContent>
       </Card>

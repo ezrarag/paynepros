@@ -41,9 +41,9 @@ export function ClientRequestTemplateManager({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Client Request Email Template</CardTitle>
+        <CardTitle>Request Email Template</CardTitle>
         <CardDescription>
-          Controls the email format used when sending client requests.
+          Controls the email format used when sending client requests from Forms & Intake.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -162,4 +162,3 @@ export function ClientRequestTemplateManager({
     </Card>
   )
 }
-

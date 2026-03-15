@@ -12,8 +12,6 @@ import { defaultHomeSections, type HomeSectionContent } from "@/lib/marketing/ho
 const FALLBACK_IMAGE_SRC =
   "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2F593ab9_e77bf4687f5840489d7bd47e7d62582d~mv2.avif?alt=media&token=54def002-cf77-4ce0-b455-e85a3c05a26d"
 
-const CONNECT_IMAGE_SRC =
-  "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2F593ab9_549b771892524f1a9466b07c473d4dfc~mv2.avif?alt=media&token=2724bcbd-b196-4616-a2ee-6ea01eb86fd4"
 const HERO_LOGO_SRC =
   "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2Flogo%20-%20payne%20professional%20services.png?alt=media&token=adda4211-7289-487f-9bc7-0436ea033ea6"
 const HOME_SECTION_ORDER = ["home-intro", "home-we-are", "home-start-here", "home-what-we-deliver", "home-how-we-work"] as const
@@ -161,28 +159,33 @@ function renderConnect(section: HomeSectionContent) {
           ) : null}
         </div>
 
-        <div className="mt-5 grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
+        <div className="mt-5 grid min-h-0 flex-1 gap-5 overflow-hidden lg:grid-cols-[0.72fr_1.28fr]">
+          <div className="min-h-0 space-y-3 overflow-hidden pr-1">
             <Card className="border-[#d2ccb8] bg-[#f8f6ef]">
-              <CardContent className="p-4">
+              <CardContent className="p-3.5">
                 <p className="text-xs tracking-[0.16em] text-[#5d5547]">PHONE</p>
-                <a href="tel:+18168051433" className="mt-2 block text-[20px] text-[#1f1f1f] hover:text-[#2f2a22]">
+                <a href="tel:+18168051433" className="mt-1.5 block text-[17px] text-[#1f1f1f] hover:text-[#2f2a22] sm:text-[18px]">
                   816-805-1433
                 </a>
               </CardContent>
             </Card>
             <Card className="border-[#d2ccb8] bg-[#f8f6ef]">
-              <CardContent className="p-4">
+              <CardContent className="p-3.5">
                 <p className="text-xs tracking-[0.16em] text-[#5d5547]">EMAIL</p>
-                <a href="mailto:taxprep@paynepros.com" className="mt-2 block break-words text-[18px] text-[#1f1f1f] hover:text-[#2f2a22]">
+                <a href="mailto:taxprep@paynepros.com" className="mt-1.5 block break-words text-[15px] text-[#1f1f1f] hover:text-[#2f2a22] sm:text-[16px]">
                   taxprep@paynepros.com
                 </a>
               </CardContent>
             </Card>
             <Card className="overflow-hidden border-[#d2ccb8] bg-[#f8f6ef]">
-              <CardContent className="p-0">
-                <div className="relative h-[150px] w-full">
-                  <Image src={CONNECT_IMAGE_SRC} alt="Consultation call in progress" fill className="object-cover" />
+              <CardContent className="p-3">
+                <div className="relative h-[78px] w-full">
+                  <Image
+                    src={HERO_LOGO_SRC}
+                    alt="Payne Professional Services"
+                    fill
+                    className="object-contain object-center grayscale brightness-0 contrast-200"
+                  />
                 </div>
               </CardContent>
             </Card>
