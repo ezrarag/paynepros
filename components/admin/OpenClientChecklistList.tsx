@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CreateIntakeLinkButton } from "@/components/admin/CreateIntakeLinkButton"
 import { NewClientIntakeLinkButton } from "@/components/admin/NewClientIntakeLinkButton"
 import { copyText } from "@/lib/utils"
 import {
@@ -54,6 +54,7 @@ export function OpenClientChecklistList({
   const [generatedLinks, setGeneratedLinks] = useState<BulkIntakeLinkResult[]>([])
   const [error, setError] = useState<string | null>(null)
   const [queueControlsOpen, setQueueControlsOpen] = useState(false)
+  const [expandedWorkspaceIds, setExpandedWorkspaceIds] = useState<string[]>([])
   const [checklistOverrides, setChecklistOverrides] = useState<
     Record<string, Record<ChecklistKey, TaxReturnChecklistStatus>>
   >({})
@@ -181,6 +182,14 @@ export function OpenClientChecklistList({
     if (!didCopy) {
       setError("Could not copy automatically on this device. Long-press the link and copy it manually.")
     }
+  }
+
+  const toggleWorkspaceExpansion = (workspaceId: string) => {
+    setExpandedWorkspaceIds((prev) =>
+      prev.includes(workspaceId)
+        ? prev.filter((id) => id !== workspaceId)
+        : [...prev, workspaceId]
+    )
   }
 
   const completeChecklistItem = (workspace: ClientWorkspace, itemKey: ChecklistKey) => {
@@ -320,12 +329,23 @@ export function OpenClientChecklistList({
             const checklist = getChecklistForWorkspace(workspace)
             const lifecycleBadge = getLifecycleBadgeLabel(checklist)
             const pendingItems = checklistItems.filter((item) => checklist[item.key] !== "complete")
+            const isExpanded = expandedWorkspaceIds.includes(workspace.id)
 
             return (
               <Card key={workspace.id}>
-                <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <CardTitle>{workspace.displayName}</CardTitle>
+                <CardHeader
+                  className="cursor-pointer flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                  onClick={() => toggleWorkspaceExpansion(workspace.id)}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                      <CardTitle>{workspace.displayName}</CardTitle>
+                    </div>
                     <CardDescription>
                       {workspace.primaryContact?.email || "No contact email"}
                     </CardDescription>
@@ -338,44 +358,53 @@ export function OpenClientChecklistList({
                       <span className="text-muted-foreground">
                         Intake: {new Date(intakeSubmittedAt).toLocaleString()}
                       </span>
+                      <span className="text-muted-foreground">
+                        {pendingItems.length === 0
+                          ? "All checklist items completed"
+                          : `${pendingItems.length} item${pendingItems.length === 1 ? "" : "s"} remaining`}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="flex flex-wrap items-center gap-2"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/admin/clients/${workspace.id}`}>Open workspace</Link>
                     </Button>
-                    <CreateIntakeLinkButton workspaceId={workspace.id} />
                   </div>
                 </CardHeader>
-                <CardContent>
-                  {pendingItems.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                      All checklist items completed.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {pendingItems.map((item) => {
-                        const rowStyle = checklistRowStyles[item.key]
-                        return (
-                          <div
-                            key={`${workspace.id}-${item.key}`}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
-                          >
-                            <span className="font-medium">{item.label}</span>
-                            <button
-                              type="button"
-                              onClick={() => completeChecklistItem(workspace, item.key)}
-                              className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
-                              aria-label={`Complete ${item.label} for ${workspace.displayName}`}
+                {isExpanded && (
+                  <CardContent>
+                    {pendingItems.length === 0 ? (
+                      <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                        All checklist items completed.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {pendingItems.map((item) => {
+                          const rowStyle = checklistRowStyles[item.key]
+                          return (
+                            <div
+                              key={`${workspace.id}-${item.key}`}
+                              className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${rowStyle.container}`}
                             >
-                              +
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
+                              <span className="font-medium">{item.label}</span>
+                              <button
+                                type="button"
+                                onClick={() => completeChecklistItem(workspace, item.key)}
+                                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xl leading-none ${rowStyle.action}`}
+                                aria-label={`Complete ${item.label} for ${workspace.displayName}`}
+                              >
+                                +
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                )}
               </Card>
             )
           })

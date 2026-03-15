@@ -151,7 +151,7 @@ export function IntakeForm({ brand, source = "website" }: IntakeFormProps) {
   const messageValue = watch("message")
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* Name Field - Effica Style */}
       <div className="space-y-3">
         <Label htmlFor="name" className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#4f483d]">

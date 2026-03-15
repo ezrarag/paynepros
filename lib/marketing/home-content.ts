@@ -75,6 +75,32 @@ export const defaultHomeSections: HomeSectionContent[] = [
     enabled: true,
   },
   {
+    id: "home-start-here",
+    variant: "benefits",
+    title: "WITH PAYNE PROFESSIONAL SERVICES YOU GET:",
+    subtitle: "",
+    body: [],
+    bullets: [],
+    benefitCards: [
+      {
+        title: "Understanding",
+        description: "WE INVEST TIME TO COMPREHEND YOUR BUSINESS AND OBJECTIVES.",
+      },
+      {
+        title: "Tailored Solutions",
+        description: "WE DON'T BELIEVE IN ONE-SIZE-FITS ALL SOLUTIONS. OUR SUPPORT IS TAILORED TO YOUR SPECIFIC GOALS.",
+      },
+      {
+        title: "Commitment to Excellence",
+        description: "OUR TEAM IS COMMITTED TO PROVIDING TOP-NOTCH RESULTS WITH PROFESSIONALISM AND ACCURACY.",
+      },
+    ],
+    imageSrc:
+      "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2Fpaynepros.png?alt=media&token=f088adf0-e08a-41e4-8b24-adaee3b813ff",
+    imageAlt: "Dream big motivational sign",
+    enabled: true,
+  },
+  {
     id: "home-what-we-deliver",
     variant: "services",
     title: "We Can Help You ...",
@@ -122,32 +148,6 @@ export const defaultHomeSections: HomeSectionContent[] = [
       "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2F593ab9_549b771892524f1a9466b07c473d4dfc~mv2.avif?alt=media&token=2724bcbd-b196-4616-a2ee-6ea01eb86fd4",
     imageAlt: "Business owner on a consultation call",
     ctaPrimaryLabel: "SUBMIT",
-    enabled: true,
-  },
-  {
-    id: "home-start-here",
-    variant: "benefits",
-    title: "WITH PAYNE PROFESSIONAL SERVICES YOU GET:",
-    subtitle: "",
-    body: [],
-    bullets: [],
-    benefitCards: [
-      {
-        title: "Understanding",
-        description: "WE INVEST TIME TO COMPREHEND YOUR BUSINESS AND OBJECTIVES.",
-      },
-      {
-        title: "Tailored Solutions",
-        description: "WE DON'T BELIEVE IN ONE-SIZE-FITS ALL SOLUTIONS. OUR SUPPORT IS TAILORED TO YOUR SPECIFIC GOALS.",
-      },
-      {
-        title: "Commitment to Excellence",
-        description: "OUR TEAM IS COMMITTED TO PROVIDING TOP-NOTCH RESULTS WITH PROFESSIONALISM AND ACCURACY.",
-      },
-    ],
-    imageSrc:
-      "https://firebasestorage.googleapis.com/v0/b/readyaimgo-clients-temp.firebasestorage.app/o/paynepros%2FContent%2Fpaynepros.png?alt=media&token=f088adf0-e08a-41e4-8b24-adaee3b813ff",
-    imageAlt: "Dream big motivational sign",
     enabled: true,
   },
 ]

@@ -5,7 +5,6 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
   Users,
   MessageSquare,
   Wallet,
@@ -52,16 +51,10 @@ const payneProsItems = [
 ]
 
 const clientSubItems = [
-  { href: "/admin/clients", label: "Client Directory", view: "directory" },
   { href: "/admin/checklists", label: "Open Checklists", view: "checklists" },
+  { href: "/admin/clients", label: "Client Directory", view: "directory" },
+  { href: "/admin/clients/activity", label: "Activity Feed", view: "activity" },
   { href: "/admin/clients?list=completed", label: "Completed / Archive", view: "completed" },
-] as const
-
-const dashboardSubItems = [
-  { href: "/admin", label: "Queue Overview" },
-  { href: "/admin/dashboard/focus", label: "Today Focus" },
-  { href: "/admin/dashboard/activity", label: "Activity Feed" },
-  { href: "/admin/dashboard/inbox", label: "Inbox" },
 ] as const
 
 const subscriptionItems = [
@@ -162,11 +155,15 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
 
   const renderLink = (item: { href: string; label: string; icon: LucideIcon }) => {
     const Icon = item.icon
+    const isClientsTopLevel =
+      item.href === "/admin/checklists" &&
+      (pathname === "/admin/checklists" ||
+        pathname.startsWith("/admin/clients") ||
+        pathname === "/admin/dashboard/activity")
     const isActive =
       pathname === item.href ||
-      (item.href !== "/admin" &&
-        (pathname.startsWith(item.href) ||
-          (item.href === "/admin/clients" && pathname.startsWith("/admin/checklists"))))
+      isClientsTopLevel ||
+      (item.href !== "/admin/checklists" && pathname.startsWith(item.href))
 
     const linkContent = (
       <Link
@@ -250,29 +247,12 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
     return linkContent
   }
 
-  const renderDashboardSubLink = (item: (typeof dashboardSubItems)[number]) => {
-    const isActive = pathname === item.href
-    return (
-      <Link
-        key={item.href}
-        href={item.href}
-        onClick={onNavigate}
-        className={cn(
-          "flex items-center rounded-lg px-4 py-1.5 text-xs transition-colors",
-          isActive
-            ? "bg-primary/10 text-primary font-semibold dark:bg-[#232b36] dark:text-slate-200"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-slate-400 dark:hover:bg-[#222a34] dark:hover:text-slate-100"
-        )}
-      >
-        {item.label}
-      </Link>
-    )
-  }
-
   const renderClientSubLink = (item: (typeof clientSubItems)[number]) => {
     const isActive =
       (item.view === "checklists" && pathname === "/admin/checklists") ||
       (item.view === "directory" && pathname === "/admin/clients" && clientListMode === "active") ||
+      (item.view === "activity" &&
+        (pathname === "/admin/clients/activity" || pathname === "/admin/dashboard/activity")) ||
       (item.view === "completed" && pathname === "/admin/clients" && clientListMode === "completed")
     return (
       <Link
@@ -345,15 +325,7 @@ export function AdminSidebar({ hasActiveSubscription, userRole, onNavigate }: Ad
               </p>
             )}
             <div className="space-y-1">
-              {renderLink({ href: "/admin", label: "Dashboard", icon: LayoutDashboard })}
-              {!isCollapsed && (
-                <div className="ml-8 space-y-1 border-l pl-3">
-                  {dashboardSubItems.map(renderDashboardSubLink)}
-                </div>
-              )}
-            </div>
-            <div className="space-y-1">
-              {renderLink({ href: "/admin/clients", label: "Clients", icon: Users })}
+              {renderLink({ href: "/admin/checklists", label: "Clients", icon: Users })}
               {!isCollapsed && (
                 <div className="ml-8 space-y-1 border-l pl-3">
                   {clientSubItems.map(renderClientSubLink)}

@@ -25,7 +25,7 @@ interface AdminLoginClientProps {
 
 export default function AdminLoginClient({ adminUsers }: AdminLoginClientProps) {
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/admin"
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/admin/checklists"
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -90,37 +90,47 @@ export default function AdminLoginClient({ adminUsers }: AdminLoginClientProps) 
     setError(null)
 
     try {
-      // Ensure CSRF token is fresh before signing in (important for cross-origin/mobile)
+      // Refresh CSRF immediately before credentials sign-in. Mobile browsers are
+      // more likely to drop or rotate the cookie between modal open and submit.
       let tokenToUse = csrfToken
-      if (!tokenToUse) {
-        const csrfRes = await fetch("/api/auth/csrf", {
-          credentials: "include",
-          headers: { "Accept": "application/json" },
-        })
-        if (csrfRes.ok) {
-          const { csrfToken: freshToken } = await csrfRes.json()
-          tokenToUse = freshToken
-          setCsrfToken(freshToken)
-        }
+      const csrfRes = await fetch("/api/auth/csrf", {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      })
+      if (csrfRes.ok) {
+        const { csrfToken: freshToken } = await csrfRes.json()
+        tokenToUse = freshToken
+        setCsrfToken(freshToken)
       }
 
-      // Use signIn - NextAuth should handle CSRF automatically
+      if (!tokenToUse) {
+        setError("Could not load security token. Refresh and try again.")
+        setIsLoading(false)
+        return
+      }
+
       const result = await signIn("admin", {
         email: selectedUser.email,
         password,
+        csrfToken: tokenToUse,
         callbackUrl,
         redirect: false,
       })
 
       if (result?.error) {
         console.error("Sign in error:", result.error)
-        // Check if it's a password error or CSRF error
         if (result.error.includes("CSRF") || result.error.includes("csrf")) {
-          setError("Security token expired. Please refresh the page and try again.")
-          // Refresh CSRF token
-          const csrfRes = await fetch("/api/auth/csrf")
-          const { csrfToken: newToken } = await csrfRes.json()
-          setCsrfToken(newToken)
+          setError("Security token mismatch. Refresh the page and try again.")
+          const retryCsrfRes = await fetch("/api/auth/csrf", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          })
+          if (retryCsrfRes.ok) {
+            const { csrfToken: newToken } = await retryCsrfRes.json()
+            setCsrfToken(newToken)
+          }
         } else {
           setError("Invalid password. Please try again.")
         }
