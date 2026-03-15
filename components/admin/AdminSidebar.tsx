@@ -6,14 +6,11 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   Users,
-  MessageSquare,
   Wallet,
-  BookOpen,
   Megaphone,
   LayoutTemplate,
   Truck,
   FileText,
-  Calculator,
   ClipboardList,
   Lock,
   ChevronDown,
@@ -43,11 +40,9 @@ import {
 } from "@/components/ui/select"
 
 const payneProsItems = [
-  { href: "/admin/messaging", label: "Messaging", icon: MessageSquare },
   { href: "/admin/integrations", label: "Integrations", icon: Plug },
-  { href: "/admin/bookkeeping", label: "Documents", icon: BookOpen },
   { href: "/admin/forms", label: "Forms", icon: ClipboardList },
-  { href: "/admin/calculations", label: "Calculations", icon: Calculator },
+  // TODO: Restore Messaging, Documents, and Calculations here when those modules are production-ready.
 ]
 
 const clientSubItems = [

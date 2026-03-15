@@ -267,6 +267,7 @@ export function ClientWorkspaceDetails({
   const [requestNote, setRequestNote] = useState("")
   const [requestDueAt, setRequestDueAt] = useState("")
   const [requestSendEmail, setRequestSendEmail] = useState(true)
+  const showWorkInProgressAdminModules = false
   const checklistRowStyles: Record<ChecklistKey, { container: string; action: string }> = {
     documentsComplete: {
       container: "bg-slate-100/90 border-slate-200 dark:bg-slate-900/60 dark:border-slate-700",
@@ -771,9 +772,11 @@ export function ClientWorkspaceDetails({
           <Button asChild variant="outline">
             <Link href="/admin/clients">Back to clients</Link>
           </Button>
-          <Button asChild>
-            <Link href={`/admin/messaging?clientId=${workspace.id}`}>Open inbox</Link>
-          </Button>
+          {showWorkInProgressAdminModules && (
+            <Button asChild>
+              <Link href={`/admin/messaging?clientId=${workspace.id}`}>Open inbox</Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/50"
@@ -802,11 +805,11 @@ export function ClientWorkspaceDetails({
         <TabsList className="flex flex-wrap gap-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="requests">Requests</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          {showWorkInProgressAdminModules && <TabsTrigger value="documents">Documents</TabsTrigger>}
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="tax-return">Tax Return</TabsTrigger>
-          <TabsTrigger value="calculations">Calculations</TabsTrigger>
+          {showWorkInProgressAdminModules && <TabsTrigger value="calculations">Calculations</TabsTrigger>}
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
@@ -1048,31 +1051,33 @@ export function ClientWorkspaceDetails({
           </Card>
         </TabsContent>
 
-        <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document vault</CardTitle>
-              <CardDescription>Upload and tag tax documents</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span>W-2s and 1099s</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
+        {showWorkInProgressAdminModules && (
+          <TabsContent value="documents" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Document vault</CardTitle>
+                <CardDescription>Upload and tag tax documents</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                    <span>W-2s and 1099s</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
+                  </div>
+                  <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                    <span>Bank statements</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
+                  </div>
+                  <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                    <span>Receipts + expenses</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span>Bank statements</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
-                </div>
-                <div className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span>Receipts + expenses</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded">Pending</span>
-                </div>
-              </div>
-              <Button variant="outline">Upload documents</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button variant="outline">Upload documents</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="forms" className="space-y-4">
           <Card>
@@ -1306,6 +1311,7 @@ export function ClientWorkspaceDetails({
           </Card>
         </TabsContent>
 
+        {showWorkInProgressAdminModules && (
         <TabsContent value="calculations" className="space-y-4">
           {/* Disclaimer Banner */}
           <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
@@ -1567,6 +1573,7 @@ export function ClientWorkspaceDetails({
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         <TabsContent value="payments" className="space-y-4">
           <Card>

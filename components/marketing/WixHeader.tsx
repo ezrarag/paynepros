@@ -62,41 +62,21 @@ export function WixHeader() {
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
               <div className="absolute right-0 z-20 mt-2 w-[min(86vw,320px)] border border-[#c8c0ad] bg-[#fbf9f4] p-4 shadow-[0_8px_20px_rgba(35,30,20,0.18)] sm:w-[260px]">
-                <nav className="sm:hidden">
-                  <ul className="space-y-1">
-                    {navItems.map((item) => {
-                      const isActive = pathname === item.href
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "block py-1.5 text-xs tracking-[0.14em] text-[#5d5547] transition-colors hover:text-[#2f2a22]",
-                              isActive && "text-[#2f2a22]"
-                            )}
-                          >
-                            {item.label}
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </nav>
                 <div className="space-y-2">
                   <Link
                     href="/admin/login"
-                    className="block text-xs tracking-[0.16em] text-[#5d5547] transition-colors hover:text-[#2f2a22] sm:pt-0 pt-3"
+                    className="block py-1.5 text-xs tracking-[0.16em] text-[#5d5547] transition-colors hover:text-[#2f2a22]"
                   >
                     ADMIN LOGIN
                   </Link>
                   <Link
-                    href="/sign-in"
-                    className="block text-xs tracking-[0.16em] text-[#5d5547] transition-colors hover:text-[#2f2a22]"
+                    href="/client/login"
+                    className="block py-1.5 text-xs tracking-[0.16em] text-[#5d5547] transition-colors hover:text-[#2f2a22]"
                   >
                     CLIENT LOGIN
                   </Link>
                 </div>
-                <div className="mt-3 border-t border-[#d5cebe] pt-3 text-[12px] leading-5 tracking-[0.01em] text-[#5d5547]">
+                <div className="mt-3 hidden border-t border-[#d5cebe] pt-3 text-[12px] leading-5 tracking-[0.01em] text-[#5d5547] sm:block">
                   <a href="tel:+18168051433" className="block hover:text-[#2f2a22]">
                     816-805-1433
                   </a>
