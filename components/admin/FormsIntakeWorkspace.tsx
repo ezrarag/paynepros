@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientRequestTemplateManager } from "@/components/admin/ClientRequestTemplateManager"
 import { LeadAutoResponseTemplateManager } from "@/components/admin/LeadAutoResponseTemplateManager"
+import { getGoogleIntegrationStatusNotice } from "@/lib/google-workspace-integration"
 import type { ClientRequestEmailTemplate } from "@/lib/types/client-request-template"
+import type { GoogleWorkspaceIntegration } from "@/lib/types/google-workspace-integration"
 import type { LeadAutoResponseTemplate } from "@/lib/types/lead-auto-response-template"
 import {
   ClipboardList,
@@ -60,17 +62,13 @@ type MockFormRecord = {
   fields: MockFormField[]
 }
 
-type GoogleFormsIntegrationState = {
-  connected: boolean
-  accountEmail: string | null
-  lastSyncAt: string | null
-}
-
 interface FormsIntakeWorkspaceProps {
   requestTemplate: ClientRequestEmailTemplate
   saveRequestTemplate: SaveRequestTemplateAction
   leadAutoResponseTemplates: LeadAutoResponseTemplate[]
   saveLeadAutoResponseTemplates: SaveLeadAutoResponseTemplatesAction
+  googleIntegration: GoogleWorkspaceIntegration
+  initialGoogleNotice?: string | null
 }
 
 // TODO: Replace seeded records with Firebase-backed form definitions and imported Google Form records.
@@ -143,13 +141,6 @@ const SEEDED_FORMS: MockFormRecord[] = [
   },
 ]
 
-// TODO: Replace with Firebase-backed OAuth connection state and Google Forms import jobs.
-const MOCK_GOOGLE_FORMS_INTEGRATION: GoogleFormsIntegrationState = {
-  connected: true,
-  accountEmail: "detania@paynepros.com",
-  lastSyncAt: "2026-03-15T08:12:00.000Z",
-}
-
 const FILTER_OPTIONS: Array<{ key: LibraryFilter; label: string }> = [
   { key: "all", label: "All" },
   { key: "internal", label: "Internal" },
@@ -202,11 +193,15 @@ export function FormsIntakeWorkspace({
   saveRequestTemplate,
   leadAutoResponseTemplates,
   saveLeadAutoResponseTemplates,
+  googleIntegration,
+  initialGoogleNotice,
 }: FormsIntakeWorkspaceProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeFilter, setActiveFilter] = useState<LibraryFilter>("all")
   const [selectedFormId, setSelectedFormId] = useState<string>(SEEDED_FORMS[0]?.id ?? "")
-  const [uiNotice, setUiNotice] = useState<string | null>(null)
+  const [uiNotice, setUiNotice] = useState<string | null>(
+    initialGoogleNotice ?? getGoogleIntegrationStatusNotice(null)
+  )
   const deferredSearchTerm = useDeferredValue(searchTerm)
 
   const filteredForms = SEEDED_FORMS.filter((form) => {
@@ -237,9 +232,9 @@ export function FormsIntakeWorkspace({
     SEEDED_FORMS.find((form) => form.id === selectedFormId) ?? SEEDED_FORMS[0] ?? null
 
   const activeFormsCount = SEEDED_FORMS.filter((form) => form.status === "live").length
-  const googleFormsConnected = MOCK_GOOGLE_FORMS_INTEGRATION.connected ? 1 : 0
+  const googleFormsConnected = googleIntegration.connected ? 1 : 0
   const newResponses = SEEDED_FORMS.reduce((sum, form) => sum + form.newResponses, 0)
-  const lastSyncLabel = formatDateTime(MOCK_GOOGLE_FORMS_INTEGRATION.lastSyncAt)
+  const lastSyncLabel = googleIntegration.connected ? formatDateTime(googleIntegration.updatedAt) : "Not synced"
 
   return (
     <div className="space-y-6">
@@ -252,7 +247,7 @@ export function FormsIntakeWorkspace({
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href="/admin/integrations">
+            <Link href="/api/integrations/google/connect?returnTo=/admin/forms">
               <Link2 className="mr-2 h-4 w-4" />
               Connect Google
             </Link>
@@ -573,24 +568,34 @@ export function FormsIntakeWorkspace({
                       <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={MOCK_GOOGLE_FORMS_INTEGRATION.connected ? "default" : "secondary"}>
-                              {MOCK_GOOGLE_FORMS_INTEGRATION.connected ? "Connected" : "Disconnected"}
+                            <Badge variant={googleIntegration.connected ? "default" : "secondary"}>
+                              {googleIntegration.connected ? "Connected" : "Disconnected"}
                             </Badge>
                             <span className="text-sm font-medium">
-                              {MOCK_GOOGLE_FORMS_INTEGRATION.accountEmail ?? "No Google account connected"}
+                              {googleIntegration.googleEmail ?? "No Google account connected"}
                             </span>
                           </div>
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Last sync: {formatDateTime(MOCK_GOOGLE_FORMS_INTEGRATION.lastSyncAt)}
+                            Last sync: {googleIntegration.connected ? formatDateTime(googleIntegration.updatedAt) : "Not synced"}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <Button asChild variant="outline">
-                            <Link href="/admin/integrations">
-                              <Link2 className="mr-2 h-4 w-4" />
-                              Connect Google
-                            </Link>
-                          </Button>
+                          {!googleIntegration.connected ? (
+                            <Button asChild variant="outline">
+                              <Link href="/api/integrations/google/connect?returnTo=/admin/forms">
+                                <Link2 className="mr-2 h-4 w-4" />
+                                Connect Google
+                              </Link>
+                            </Button>
+                          ) : (
+                            <form action="/api/integrations/google/disconnect" method="post">
+                              <input type="hidden" name="returnTo" value="/admin/forms" />
+                              <Button type="submit" variant="outline">
+                                <Unplug className="mr-2 h-4 w-4" />
+                                Disconnect
+                              </Button>
+                            </form>
+                          )}
                           <Button
                             type="button"
                             variant="outline"
@@ -611,21 +616,11 @@ export function FormsIntakeWorkspace({
                             <FolderSync className="mr-2 h-4 w-4" />
                             Sync
                           </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() =>
-                              setUiNotice("Disconnect is staged in the UI only. OAuth token revocation and Firebase cleanup still need to be implemented.")
-                            }
-                          >
-                            <Unplug className="mr-2 h-4 w-4" />
-                            Disconnect
-                          </Button>
                         </div>
                       </div>
 
                       <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                        Google Forms import is coming soon. The UI is ready; backend import, OAuth token storage, and response sync should connect here next.
+                        Google Forms import is coming soon. Connect and disconnect are live at the org level; secure token storage, import jobs, and response sync still need to be completed.
                       </div>
                     </CardContent>
                   </Card>
