@@ -1,5 +1,6 @@
 import { adminDb, Timestamp } from "@/lib/firebase/admin"
 import type { ClientRequest } from "@/lib/types/client-workspace"
+import { reminderScheduleRepository } from "@/lib/repositories/reminder-schedule-repository"
 
 const WORKSPACES_COLLECTION = "clientWorkspaces"
 const REQUESTS_COLLECTION = "clientRequests"
@@ -90,6 +91,11 @@ export class ClientRequestRepository {
         sentAt: new Date().toISOString(),
       }
       mockClientRequests = [request, ...mockClientRequests]
+      await reminderScheduleRepository.create({
+        requestId: request.id,
+        workspaceId,
+        createdAt: request.sentAt,
+      })
       return request
     }
 
@@ -114,11 +120,21 @@ export class ClientRequestRepository {
       ...(completedAtTs ? { completedAt: completedAtTs } : {}),
     })
 
+    const sentAtIso = now.toDate().toISOString()
+
+    if (input.status !== "completed") {
+      await reminderScheduleRepository.create({
+        requestId: docRef.id,
+        workspaceId,
+        createdAt: sentAtIso,
+      })
+    }
+
     return {
       ...input,
       id: docRef.id,
       workspaceId,
-      sentAt: now.toDate().toISOString(),
+      sentAt: sentAtIso,
     }
   }
 
@@ -147,6 +163,9 @@ export class ClientRequestRepository {
         next,
         ...mockClientRequests.slice(index + 1),
       ]
+      if (input.status === "completed") {
+        await reminderScheduleRepository.deactivate(requestId)
+      }
       return next
     }
 
@@ -168,6 +187,10 @@ export class ClientRequestRepository {
         ? { completedAt: Timestamp.fromDate(new Date(input.completedAt)) }
         : {}),
     })
+
+    if (input.status === "completed") {
+      await reminderScheduleRepository.deactivate(requestId)
+    }
 
     const updated = await docRef.get()
     return mapRequestDoc(workspaceId, requestId, updated.data())

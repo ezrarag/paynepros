@@ -23,9 +23,96 @@ import type {
   ScheduleCRow,
 } from "@/lib/types/client-workspace"
 
-export type ActionResult<T = void> = 
+export type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string }
+
+export async function toggleReminderSchedule(formData: FormData): Promise<void> {
+  try {
+    const workspaceId = String(formData.get("workspaceId") || "")
+    const requestId = String(formData.get("requestId") || "")
+    const active = formData.get("active") === "true"
+    if (!workspaceId || !requestId) {
+      return
+    }
+
+    const { reminderScheduleRepository } = await import(
+      "@/lib/repositories/reminder-schedule-repository"
+    )
+    const updated = await reminderScheduleRepository.setActive(requestId, active)
+    if (!updated) {
+      return
+    }
+
+    await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+      type: "task",
+      title: active ? "Reminders resumed" : "Reminders paused",
+      description: `Automatic reminders ${active ? "resumed" : "paused"} by admin.`,
+      metadata: { requestId },
+    })
+
+    revalidatePath(`/admin/clients/${workspaceId}`)
+  } catch (error) {
+    console.error("Failed to toggle reminder schedule:", error)
+  }
+}
+
+export async function sendReminderNow(formData: FormData): Promise<void> {
+  try {
+    const workspaceId = String(formData.get("workspaceId") || "")
+    const requestId = String(formData.get("requestId") || "")
+    if (!workspaceId || !requestId) {
+      return
+    }
+
+    const { sendRequestReminder } = await import("@/lib/notifications/dispatcher")
+    const { reminderScheduleRepository } = await import(
+      "@/lib/repositories/reminder-schedule-repository"
+    )
+
+    const results = await sendRequestReminder(workspaceId, requestId)
+    const sentChannels = results.filter((result) => result.ok).map((result) => result.channel)
+
+    if (sentChannels.length > 0) {
+      await reminderScheduleRepository.markAttempt(requestId, { channels: sentChannels })
+      await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+        type: "task",
+        title: "Manual reminder sent",
+        description: `Reminder sent via ${sentChannels.join(", ")}.`,
+        metadata: { requestId },
+      })
+    }
+
+    revalidatePath(`/admin/clients/${workspaceId}`)
+  } catch (error) {
+    console.error("Failed to send manual reminder:", error)
+  }
+}
+
+export async function toggleNotificationChannel(formData: FormData): Promise<void> {
+  try {
+    const workspaceId = String(formData.get("workspaceId") || "")
+    const channel = String(formData.get("channel") || "")
+    const enabled = formData.get("enabled") === "true"
+    if (!workspaceId || (channel !== "email" && channel !== "sms")) {
+      return
+    }
+
+    await clientWorkspaceRepository.updateNotificationPreferences(workspaceId, {
+      [channel]: enabled,
+    })
+    await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+      type: "profile_updated",
+      title: "Notification channel updated by admin",
+      description: `${channel === "email" ? "Email" : "SMS"} reminders ${enabled ? "enabled" : "disabled"}.`,
+    })
+
+    revalidatePath(`/admin/clients/${workspaceId}`)
+    revalidatePath("/client")
+  } catch (error) {
+    console.error("Failed to toggle notification channel:", error)
+  }
+}
 
 async function maybeCompleteDocumentsChecklist(workspaceId: string) {
   const requests = await clientRequestRepository.listByWorkspace(workspaceId)

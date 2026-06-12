@@ -1,6 +1,11 @@
 import { randomUUID } from "crypto"
 import { adminDb, Timestamp } from "@/lib/firebase/admin"
-import { ClientWorkspace, TimelineEvent } from "@/lib/types/client-workspace"
+import {
+  ClientWorkspace,
+  NotificationPreferences,
+  TimelineEvent,
+  DEFAULT_NOTIFICATION_PREFERENCES,
+} from "@/lib/types/client-workspace"
 
 const WORKSPACES_COLLECTION = "clientWorkspaces"
 const TIMELINE_COLLECTION = "timeline"
@@ -330,6 +335,22 @@ export class ClientWorkspaceRepository {
       console.error("Failed to update workspace:", error)
       throw new Error("Failed to update client workspace")
     }
+  }
+
+  async updateNotificationPreferences(
+    workspaceId: string,
+    prefs: Partial<NotificationPreferences>
+  ): Promise<ClientWorkspace | null> {
+    const existing = await this.findById(workspaceId)
+    if (!existing) {
+      return null
+    }
+    const merged: NotificationPreferences = {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...existing.notificationPreferences,
+      ...prefs,
+    }
+    return this.update(workspaceId, { notificationPreferences: merged })
   }
 
   async appendTimelineEvent(

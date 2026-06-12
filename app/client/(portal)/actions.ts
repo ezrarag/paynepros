@@ -43,6 +43,52 @@ async function maybeCompleteDocumentsChecklist(workspaceId: string) {
   })
 }
 
+export async function updateNotificationSettings(formData: FormData): Promise<void> {
+  try {
+    const user = await requireClientPortalSession()
+    const workspaceId = String(formData.get("workspaceId") || "")
+    if (!workspaceId || workspaceId !== user.workspaceId) {
+      return
+    }
+
+    const email = formData.get("email") === "on"
+    const sms = formData.get("sms") === "on"
+    const phoneRaw = String(formData.get("phone") || "").trim()
+
+    const updates: {
+      email: boolean
+      sms: boolean
+      phone?: string
+      phoneVerifiedAt?: null
+    } = { email, sms }
+
+    if (phoneRaw) {
+      const normalized = phoneRaw.replace(/[\s()-]/g, "")
+      if (!/^\+[1-9]\d{1,14}$/.test(normalized)) {
+        return
+      }
+      const workspace = await clientWorkspaceRepository.findById(workspaceId)
+      if (workspace?.notificationPreferences?.phone !== normalized) {
+        updates.phone = normalized
+        // New phone number resets verification (OTP flow comes later)
+        updates.phoneVerifiedAt = null
+      }
+    }
+
+    await clientWorkspaceRepository.updateNotificationPreferences(workspaceId, updates)
+    await clientWorkspaceRepository.appendTimelineEvent(workspaceId, {
+      type: "profile_updated",
+      title: "Notification settings updated",
+      description: `Email ${email ? "on" : "off"}, SMS ${sms ? "on" : "off"}${updates.phone ? ", phone updated" : ""}.`,
+    })
+
+    revalidatePath("/client")
+    revalidatePath(`/admin/clients/${workspaceId}`)
+  } catch (error) {
+    console.error("Failed to update notification settings:", error)
+  }
+}
+
 export async function updateClientChecklistStatus(formData: FormData): Promise<void> {
   try {
     const user = await requireClientPortalSession()

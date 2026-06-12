@@ -16,7 +16,9 @@ import {
   clientSignOut,
   completeClientRequest,
   syncClientQuickBooks,
+  updateNotificationSettings,
 } from "./actions"
+import { DEFAULT_NOTIFICATION_PREFERENCES } from "@/lib/types/client-workspace"
 
 const statusStyles = {
   not_started: "bg-muted text-muted-foreground",
@@ -138,6 +140,10 @@ export default async function ClientPortalPage({
   const checklist = normalizeChecklist(workspace.taxReturnChecklist)
   const qbConnection = quickBooksOrg?.intuitConnection ?? null
   const hasQuickBooksConnection = Boolean(qbConnection)
+  const notificationPrefs = {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...workspace.notificationPreferences,
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
@@ -367,6 +373,62 @@ export default async function ClientPortalPage({
               })}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification Settings</CardTitle>
+          <CardDescription className="leading-6">
+            Choose how we remind you about requested documents and updates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateNotificationSettings} className="space-y-4">
+            <input type="hidden" name="workspaceId" value={workspace.id} />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="email"
+                  defaultChecked={notificationPrefs.email}
+                  className="h-4 w-4 rounded border"
+                />
+                Email reminders
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="sms"
+                  defaultChecked={notificationPrefs.sms}
+                  className="h-4 w-4 rounded border"
+                />
+                Text message (SMS) reminders
+              </label>
+            </div>
+            <div className="grid gap-2 sm:max-w-sm">
+              <label htmlFor="notification-phone" className="text-sm font-medium">
+                Mobile number for texts
+              </label>
+              <input
+                id="notification-phone"
+                type="tel"
+                name="phone"
+                defaultValue={notificationPrefs.phone ?? ""}
+                placeholder="+15551234567"
+                className="h-9 rounded-md border bg-background px-3 text-sm"
+              />
+              <p className="text-xs leading-5 text-muted-foreground">
+                Use the format +1 followed by your 10-digit number.
+                {notificationPrefs.phone && !notificationPrefs.phoneVerifiedAt
+                  ? " This number has not been verified yet."
+                  : null}
+              </p>
+            </div>
+            <Button type="submit" variant="outline">
+              Save notification settings
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

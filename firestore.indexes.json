@@ -1,13 +1,11 @@
 {
   "indexes": [
     {
-      "collectionGroup": "intakeResponses",
-      "queryScope": "COLLECTION_GROUP",
+      "collectionGroup": "reminderSchedules",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "submittedAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "nextRunAt", "order": "ASCENDING" }
       ]
     }
   ],

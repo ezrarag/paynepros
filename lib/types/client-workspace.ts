@@ -32,6 +32,21 @@ export interface TaxReturnChecklist {
   accepted: TaxReturnChecklistStatus
 }
 
+export interface NotificationPreferences {
+  email: boolean
+  sms: boolean
+  voice: boolean
+  /** E.164 format */
+  phone?: string
+  phoneVerifiedAt?: string | null
+}
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  email: true,
+  sms: false,
+  voice: false,
+}
+
 export interface ClientWorkspace {
   id: string
   displayName: string
@@ -41,6 +56,7 @@ export interface ClientWorkspace {
     email?: string
     phone?: string
   }
+  notificationPreferences?: NotificationPreferences
   taxYears: number[]
   tags: string[]
   taxReturnChecklist?: TaxReturnChecklist
@@ -229,4 +245,19 @@ export interface ClientRequest {
   viewedAt?: string
   completedAt?: string
   dueAt?: string
+}
+
+export interface ReminderSchedule {
+  id: string
+  requestId: string
+  workspaceId: string
+  cadenceDays: number
+  nextRunAt: string
+  maxAttempts: number
+  attemptCount: number
+  channelsLastAttempted: string[]
+  active: boolean
+  escalate: boolean
+  createdAt: string
+  updatedAt: string
 }
