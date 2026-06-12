@@ -169,6 +169,63 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (account?.provider === "admin") return true
       // Client Credentials: no repository sync
       if (account?.provider === "client") return true
+
+      // Google OAuth: route into admin or client portal session based on
+      // whether the Google account email matches an admin user or a client
+      // workspace's primary contact email.
+      if (account?.provider === "google") {
+        const email = (user?.email || (profile as { email?: string } | undefined)?.email)
+          ?.trim()
+          .toLowerCase()
+        if (!email) return false
+
+        try {
+          const { adminUserRepository } = await import(
+            "@/lib/repositories/admin-user-repository"
+          )
+          const adminUser = await adminUserRepository.findByEmail(email)
+          if (adminUser) {
+            const isActive =
+              adminUser.active === true ||
+              adminUser.active === "true" ||
+              (typeof adminUser.active === "string" &&
+                adminUser.active.toLowerCase() === "true")
+
+            if (isActive) {
+              user.tenantId = adminUser.tenantId
+              user.adminRole = adminUser.role
+              return true
+            }
+          }
+
+          const { clientWorkspaceRepository } = await import(
+            "@/lib/repositories/client-workspace-repository"
+          )
+          const workspace = await clientWorkspaceRepository.findByPrimaryContactEmail(email)
+          if (workspace) {
+            user.clientWorkspaceId = workspace.id
+            user.clientRole = "client"
+
+            // Also set the client portal cookie session so portal pages that
+            // check `pp_client_portal` directly (instead of the NextAuth
+            // session) recognize the signed-in client.
+            try {
+              const { setClientPortalSession } = await import("@/lib/client-portal-session")
+              await setClientPortalSession({ workspaceId: workspace.id, email })
+            } catch (error) {
+              console.error("Failed to set client portal session for Google sign-in:", error)
+            }
+
+            return true
+          }
+        } catch (error) {
+          console.error("Google sign-in routing error:", error)
+          return false
+        }
+
+        // No matching admin user or client workspace - deny access.
+        return false
+      }
       // Skip repository sync in Edge runtime (middleware) - only run in Node.js runtime
       if (user?.id && typeof globalThis.EdgeRuntime === "undefined") {
         try {

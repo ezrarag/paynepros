@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Shield, Users, Lock } from "lucide-react"
 import type { AdminUser } from "@/lib/types/admin"
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton"
 
 interface AdminLoginClientProps {
   adminUsers: AdminUser[]
@@ -213,6 +214,19 @@ export default function AdminLoginClient({ adminUsers }: AdminLoginClientProps) 
                 </p>
               </>
             )}
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-card px-2 text-[10px] sm:text-xs text-muted-foreground">
+                  or
+                </span>
+              </div>
+            </div>
+
+            <GoogleSignInButton callbackUrl={callbackUrl} />
           </CardContent>
         </Card>
       </div>
