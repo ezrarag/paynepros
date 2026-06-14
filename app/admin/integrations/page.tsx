@@ -1,12 +1,20 @@
 import { getCurrentUser } from "@/lib/auth"
-import { getGoogleIntegrationStatusNotice } from "@/lib/google-workspace-integration"
+import {
+  GOOGLE_GMAIL_READONLY_SCOPE,
+  getGoogleIntegrationStatusNotice,
+} from "@/lib/google-workspace-integration"
 import { canManageIntegrations } from "@/lib/rbac"
 import { mockIntegrationStatus } from "@/lib/mock/admin"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Mail, MessageCircle, Check, X, FileSpreadsheet, FolderSync, Link2, Unplug } from "lucide-react"
+import { Mail, MessageCircle, Check, X, FileSpreadsheet, FolderSync, Link2, Search, Send, Trash2, Unplug } from "lucide-react"
 import Link from "next/link"
+import {
+  createRequestFromGmailSuggestion,
+  dismissGmailSuggestion,
+  scanGmailChases,
+} from "./actions"
 
 const PROVIDER_LABELS: Record<string, string> = {
   gmail: "Gmail",
@@ -25,8 +33,11 @@ export default async function IntegrationsPage({
   const canManage = canManageIntegrations(user)
   const { integrationRepository } = await import("@/lib/repositories/integration-repository")
   const googleIntegration = await integrationRepository.getGoogleWorkspaceIntegration(user.tenantId)
+  const { gmailChaseRepository } = await import("@/lib/repositories/gmail-chase-repository")
+  const gmailSuggestions = await gmailChaseRepository.listByTenant(user.tenantId)
   const resolvedSearchParams = searchParams ? await searchParams : undefined
   const googleNotice = getGoogleIntegrationStatusNotice(resolvedSearchParams?.google)
+  const gmailScopeGranted = googleIntegration.scopes.includes(GOOGLE_GMAIL_READONLY_SCOPE)
 
   return (
     <div className="space-y-6">
@@ -177,11 +188,111 @@ export default async function IntegrationsPage({
             </div>
           </div>
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            Google Forms import is staged in the UI and linked to the Forms &amp; Intake workspace. Org-level connect and disconnect are live; secure token storage and sync jobs are still TODO.
+            Google Forms import is staged in the UI and linked to the Forms &amp; Intake workspace.
+            Org-level connect, disconnect, secure token storage, and Gmail scanning are live.
           </div>
           <Button asChild variant="outline">
             <Link href="/admin/forms">Open Forms &amp; Intake</Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Gmail Chasing Scanner</CardTitle>
+          <CardDescription>
+            Scan recent sent Gmail messages, match clients by email, and turn detected document
+            requests into tracked client requests with reminders.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={googleIntegration.connected ? "default" : "secondary"}>
+                  {googleIntegration.connected ? "Google connected" : "Google disconnected"}
+                </Badge>
+                <Badge variant={gmailScopeGranted ? "default" : "secondary"}>
+                  {gmailScopeGranted ? "Gmail access granted" : "Reconnect for Gmail access"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Pending suggestions: {gmailSuggestions.length}
+              </p>
+            </div>
+            {canManage ? (
+              <form action={scanGmailChases}>
+                <Button type="submit" variant="outline" disabled={!googleIntegration.connected || !gmailScopeGranted}>
+                  <Search className="mr-2 h-4 w-4" />
+                  Scan Gmail
+                </Button>
+              </form>
+            ) : null}
+          </div>
+
+          {!googleIntegration.connected ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Connect Google Workspace to enable Gmail scanning.
+            </p>
+          ) : !gmailScopeGranted ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              This Google connection predates Gmail scanning. Disconnect and reconnect Google to grant
+              Gmail readonly access.
+            </p>
+          ) : gmailSuggestions.length === 0 ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              No pending Gmail chase suggestions. Run a scan after sending client document-request emails.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {gmailSuggestions.map((suggestion) => (
+                <li key={suggestion.id} className="rounded-lg border p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="break-words text-sm font-medium">{suggestion.workspaceName}</p>
+                        <Badge variant={suggestion.confidence === "high" ? "default" : "secondary"}>
+                          {suggestion.confidence} confidence
+                        </Badge>
+                      </div>
+                      <p className="break-words text-sm">{suggestion.title}</p>
+                      <p className="break-words text-xs leading-5 text-muted-foreground">
+                        {suggestion.subject ? `${suggestion.subject} · ` : ""}
+                        {suggestion.snippet ?? "No Gmail snippet available."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        To {suggestion.clientEmail} ·{" "}
+                        {new Date(suggestion.receivedAt).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    {canManage ? (
+                      <div className="flex flex-wrap gap-2">
+                        <form action={createRequestFromGmailSuggestion}>
+                          <input type="hidden" name="suggestionId" value={suggestion.id} />
+                          <Button type="submit" size="sm">
+                            <Send className="mr-2 h-4 w-4" />
+                            Create request
+                          </Button>
+                        </form>
+                        <form action={dismissGmailSuggestion}>
+                          <input type="hidden" name="suggestionId" value={suggestion.id} />
+                          <Button type="submit" variant="outline" size="sm">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Dismiss
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

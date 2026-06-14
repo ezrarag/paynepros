@@ -94,8 +94,6 @@ export async function GET(request: NextRequest) {
       return buildRedirect(request, oauthState.returnTo, "oauth_failed")
     }
 
-    // TODO: Store Google refresh/access tokens securely once secret storage and rotation are in place.
-    // For now, only org-level integration metadata is persisted so connect/disconnect/read-state flows work.
     await integrationRepository.upsertGoogleWorkspaceIntegration({
       tenantId: oauthState.tenantId,
       googleEmail: userInfo.email,
@@ -107,9 +105,11 @@ export async function GET(request: NextRequest) {
           : null,
         tokenType: tokenData.token_type ?? null,
         hasRefreshToken: Boolean(tokenData.refresh_token),
-        refreshTokenStored: false,
+        refreshTokenStored: Boolean(tokenData.refresh_token),
       },
       connectedByUserId: oauthState.userId,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
     })
 
     return buildRedirect(request, oauthState.returnTo, "connected")

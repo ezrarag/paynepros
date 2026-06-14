@@ -1,12 +1,17 @@
 import type { GoogleWorkspaceIntegration } from "@/lib/types/google-workspace-integration"
 
-export const GOOGLE_FORMS_SCOPES = [
+export const GOOGLE_GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+
+export const GOOGLE_WORKSPACE_SCOPES = [
   "openid",
   "email",
   "profile",
   "https://www.googleapis.com/auth/forms.body.readonly",
   "https://www.googleapis.com/auth/forms.responses.readonly",
+  GOOGLE_GMAIL_READONLY_SCOPE,
 ]
+
+export const GOOGLE_FORMS_SCOPES = GOOGLE_WORKSPACE_SCOPES
 
 export const DEFAULT_GOOGLE_WORKSPACE_INTEGRATION = (
   tenantId: string
@@ -34,6 +39,10 @@ export function getGoogleIntegrationStatusNotice(status?: string | null) {
   switch (status) {
     case "connected":
       return "Google Workspace is connected for this organization."
+    case "gmail_scan_complete":
+      return "Gmail scan complete. Review any suggested client chases below."
+    case "gmail_scan_failed":
+      return "Gmail scan failed. Check the Google connection and token permissions."
     case "disconnected":
       return "Google Workspace was disconnected for this organization."
     case "missing_config":
@@ -46,4 +55,3 @@ export function getGoogleIntegrationStatusNotice(status?: string | null) {
       return null
   }
 }
-
